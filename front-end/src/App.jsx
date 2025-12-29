@@ -1,35 +1,44 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="registrationCard">
+        <div className="heading">
+          <h1>Welcome Back</h1>
+          <p>
+            Track your health with <span className="topic">MedValut</span>
+          </p>
+        </div>
+
+        <form action="" method="get" className="form">
+          <label htmlFor="">Role</label> <br />
+          <select name="" id="">
+            <option value="nurse">Nurse</option>
+            <option value="Doctor">Doctor</option>
+            <option value="Admin">Admin</option>
+            <option value="Paitent">Paitent</option>
+          </select>
+          <br />
+          <label htmlFor="">Email</label> <br />
+          <input type="text" /> <br />
+          <label htmlFor="">Password</label> <br />
+          <input type="password" /> <br />
+          <a href="" className="forgetP">
+            Forget Password
+          </a>{" "}
+          <br />
+          <button className="rButn">Sign in</button>
+          <p className="newAccLink">
+            New to Medvalut ?
+            <span>
+              <a href="">Create Account</a>
+            </span>
+          </p>
+        </form>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
