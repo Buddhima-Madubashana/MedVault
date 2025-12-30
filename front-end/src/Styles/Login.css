@@ -1,0 +1,60 @@
+/* Removed global CSS */
+* {
+  padding: 0;
+  margin: 0;
+}
+
+/* Bacground image */
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center; /* horizontal center */
+  align-items: center; /* vertical center */
+  background-image: url("../assets/Background image.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Log in card */
+.logInCard {
+  background-color: aquamarine;
+  display: inline-block;
+  padding: 55px;
+  border-radius: 20px;
+}
+
+.formContainer {
+  margin: 10px;
+}
+
+#roleSelection {
+  width: 105%;
+  padding: 5px;
+}
+
+input {
+  width: 100%;
+  padding: 5px;
+}
+
+.signInBtn {
+  background-color: aqua;
+  width: 105%;
+  padding: 5px;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.passwordReset {
+  position: relative;
+  top: 5px;
+  left: 55%;
+}
+.createAcc {
+  margin-top: 10px;
+}
