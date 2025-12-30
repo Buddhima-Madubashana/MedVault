@@ -4,6 +4,9 @@ import "../styles/Login.css";
 function Login() {
   return (
     <div>
+      <div className="log">
+        <img src="../assets/Logo.png" alt="Logo" />
+      </div>
       <div className="logInCard">
         <h1>Welcome Back</h1>
         <p>
@@ -20,7 +23,8 @@ function Login() {
             </select>
             <br />
             <label htmlFor="">Email</label> <br />
-            <input type="text" placeholder="Enter your email" /> <br />
+            <input type="text" placeholder="Enter your email" id="email" />{" "}
+            <br />
             <label htmlFor="">Password</label> <br />
             <input type="password" placeholder="Enter your password" />
             <br />

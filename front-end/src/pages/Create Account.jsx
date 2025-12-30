@@ -5,9 +5,7 @@ function CreateAccount() {
     <div>
       <div className="logInCard">
         <h1>Create Account</h1>
-        <p>
-          Track your health with <b>Medvault</b>
-        </p>
+        <p>Enter your details</p>
         <div className="formContainer">
           <form action="" className="logInForm">
             <label htmlFor="">First Name</label> <br />
@@ -27,9 +25,9 @@ function CreateAccount() {
               Forget Password
             </a>
             <br />
-            <button className="signInBtn">Sign In</button>
+            <button className="signInBtn">Next</button>
             <p className="createAcc">
-              New to MedVault? <a href="#">Create Account</a>
+              Already have account? <a href="#">Log in</a>
             </p>
           </form>
         </div>
@@ -37,3 +35,5 @@ function CreateAccount() {
     </div>
   );
 }
+
+export default CreateAccount;

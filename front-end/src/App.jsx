@@ -1,10 +1,11 @@
-import "./App.css";
 import Login from "./pages/Login";
+import CreateAccount from "./pages/Create Account";
 
 function App() {
   return (
     <>
-      <Login></Login>
+      {/* <Login></Login> */}
+      <CreateAccount></CreateAccount>
     </>
   );
 }
