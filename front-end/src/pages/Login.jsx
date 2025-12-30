@@ -11,7 +11,7 @@ function Login() {
         </p>
         <div className="formContainer">
           <form action="" className="logInForm">
-            <label htmlFor="">Role</label> <br />
+            <label htmlFor="">Select Your Role</label> <br />
             <select name="" id="roleSelection">
               <option value="Admin">Admin</option>
               <option value="Doctor">Doctor</option>
@@ -20,7 +20,7 @@ function Login() {
             </select>
             <br />
             <label htmlFor="">Email</label> <br />
-            <input type="email" placeholder="Enter your email" /> <br />
+            <input type="text" placeholder="Enter your email" /> <br />
             <label htmlFor="">Password</label> <br />
             <input type="password" placeholder="Enter your password" />
             <br />
@@ -29,7 +29,7 @@ function Login() {
             </a>
             <br />
             <button className="signInBtn">Sign In</button>
-            <p className="createAcc">
+            <p>
               New to MedVault? <a href="#">Create Account</a>
             </p>
           </form>
