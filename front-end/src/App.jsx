@@ -1,11 +1,8 @@
-import Login from "./pages/Login";
-import CreateAccount from "./pages/Create Account";
-
+import LandingPage from "./pages/Landing";
 function App() {
   return (
     <>
-      <Login></Login>
-      {/* <CreateAccount></CreateAccount> */}
+      <LandingPage></LandingPage>
     </>
   );
 }
