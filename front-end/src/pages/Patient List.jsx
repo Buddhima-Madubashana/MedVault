@@ -1,3 +1,5 @@
+import Navigation from "../components/Navigation";
+
 function PatientList() {
   return (
     <div>

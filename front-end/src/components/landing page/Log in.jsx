@@ -1,5 +1,6 @@
 "use client";
 import Signin1 from "./Sign up";
+import Navigation from "../Navigation";
 
 import React, { useState } from "react";
 const UserIcon = () => (
