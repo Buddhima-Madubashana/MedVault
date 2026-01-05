@@ -1,5 +1,9 @@
 function PatientList() {
-  return <div className="body"></div>;
+  return (
+    <div>
+      <h1>Patient data </h1>
+    </div>
+  );
 }
 
 export default PatientList;

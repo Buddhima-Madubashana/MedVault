@@ -74,7 +74,7 @@ const FileIcon = ({ className = "w-5 h-5" }) => (
     <polyline points="14,2 14,8 20,8" />
   </svg>
 );
-export default function VerticalTabs({ tabs, className }) {
+export default function adminDashboard({ tabs, className }) {
   const [activeTab, setActiveTab] = useState(tabs[0].id);
   return (
     <div
@@ -170,7 +170,7 @@ export default function VerticalTabs({ tabs, className }) {
     </div>
   );
 }
-export function VerticalTabsDemo() {
+export function adminDashboardDemo() {
   const tabs = [
     {
       id: "dashboard",
@@ -204,5 +204,5 @@ export function VerticalTabsDemo() {
       badge: 5,
     },
   ];
-  return <VerticalTabs tabs={tabs} />;
+  return <adminDashboard tabs={tabs} />;
 }
