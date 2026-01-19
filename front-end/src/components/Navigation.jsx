@@ -11,7 +11,7 @@ import {
   Calendar,
   User,
 } from "lucide-react";
-export default function Header4() {
+export default function NavigationBar() {
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
@@ -88,11 +88,7 @@ export default function Header4() {
                       onClick={() => setActiveTab(item.name)}
                       className={`
                         flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-300
-                        ${
-                          activeTab === item.name
-                            ? "bg-gray-800 text-white"
-                            : "text-gray-400 hover:text-white hover:bg-gray-900"
-                        }
+                        ${activeTab === item.name ? "bg-gray-800 text-white" : "text-gray-400 hover:text-white hover:bg-gray-900"}
                       `}
                     >
                       <Icon size={18} />
@@ -109,19 +105,13 @@ export default function Header4() {
               >
                 <div className="flex flex-col items-center justify-center w-5 h-5">
                   <div
-                    className={`w-4 h-0.5 bg-white transition-all duration-300 ${
-                      isMobileMenuOpen ? "rotate-45 translate-y-0.5" : ""
-                    }`}
+                    className={`w-4 h-0.5 bg-white transition-all duration-300 ${isMobileMenuOpen ? "rotate-45 translate-y-0.5" : ""}`}
                   ></div>
                   <div
-                    className={`w-4 h-0.5 bg-white mt-1 transition-all duration-300 ${
-                      isMobileMenuOpen ? "opacity-0" : ""
-                    }`}
+                    className={`w-4 h-0.5 bg-white mt-1 transition-all duration-300 ${isMobileMenuOpen ? "opacity-0" : ""}`}
                   ></div>
                   <div
-                    className={`w-4 h-0.5 bg-white mt-1 transition-all duration-300 ${
-                      isMobileMenuOpen ? "-rotate-45 -translate-y-1.5" : ""
-                    }`}
+                    className={`w-4 h-0.5 bg-white mt-1 transition-all duration-300 ${isMobileMenuOpen ? "-rotate-45 -translate-y-1.5" : ""}`}
                   ></div>
                 </div>
               </button>
@@ -136,7 +126,7 @@ export default function Header4() {
                 <input
                   type="text"
                   placeholder="Search"
-                  className="w-40 py-2 pl-10 pr-4 text-white placeholder-gray-500 transition-all duration-300 bg-gray-900 border border-gray-700  rounded-xl md:w-64 focus:outline-none focus:ring-2 focus:ring-gray-600"
+                  className="w-40 py-2 pl-10 pr-4 text-white placeholder-gray-500 transition-all duration-300 bg-gray-900 border border-gray-700 rounded-xl md:w-64 focus:outline-none focus:ring-2 focus:ring-gray-600"
                 />
               </div>
 
@@ -144,7 +134,7 @@ export default function Header4() {
                 <Search className="w-5 h-5 text-gray-400" />
               </button>
 
-              <button className="relative p-2 transition-all duration-300 bg-gray-900 border border-gray-700  rounded-xl hover:bg-gray-800 group">
+              <button className="relative p-2 transition-all duration-300 bg-gray-900 border border-gray-700 rounded-xl hover:bg-gray-800 group">
                 <Bell className="w-5 h-5 text-gray-400 transition-colors group-hover:text-white" />
               </button>
 
@@ -168,9 +158,7 @@ export default function Header4() {
                     )}
                   </div>
                   <ChevronDown
-                    className={`h-4 w-4 text-gray-500 hidden sm:block transition-transform duration-300 ${
-                      isUserDropdownOpen ? "rotate-180" : ""
-                    }`}
+                    className={`h-4 w-4 text-gray-500 hidden sm:block transition-transform duration-300 ${isUserDropdownOpen ? "rotate-180" : ""}`}
                   />
                 </div>
 
@@ -225,11 +213,7 @@ export default function Header4() {
                       }}
                       className={`
                         flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-300
-                        ${
-                          activeTab === item.name
-                            ? "bg-gray-800 text-white"
-                            : "text-gray-400 hover:text-white hover:bg-gray-900"
-                        }
+                        ${activeTab === item.name ? "bg-gray-800 text-white" : "text-gray-400 hover:text-white hover:bg-gray-900"}
                       `}
                     >
                       <Icon size={18} />

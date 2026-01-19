@@ -366,7 +366,7 @@ const Signin1 = ({ onSwitchToLogin }) => {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Already have an account?{" "}
               <a
-                onClick={{ onSwitchToLogin }}
+                onClick={onSwitchToLogin}
                 href="#"
                 className="font-medium text-gray-900 dark:text-gray-100 hover:underline"
               >
