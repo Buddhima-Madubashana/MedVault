@@ -95,6 +95,78 @@ const teamMembers = [
     imageUrl:
       "https://i.pinimg.com/1200x/08/a2/41/08a2413b771b729a9f9df20fa97be52a.jpg",
   },
+  {
+    name: "Ava Rodriguez",
+    role: "Data Scientist",
+    imageUrl:
+      "https://i.pinimg.com/736x/ce/31/42/ce3142d7a968fff3aecd0100572a5e8b.jpg",
+  },
+  {
+    name: "Lucas Garcia",
+    role: "Backend Engineer",
+    imageUrl:
+      "https://i.pinimg.com/736x/79/63/a5/7963a5246188d408b8f28961a0cf2b90.jpg",
+  },
+  {
+    name: "Mia Martinez",
+    role: "Frontend Developer",
+    imageUrl:
+      "https://i.pinimg.com/736x/8e/c1/f8/8ec1f80db272047cedf4c20263114387.jpg",
+  },
+  {
+    name: "Henry Wilson",
+    role: "DevOps Engineer",
+    imageUrl:
+      "https://i.pinimg.com/1200x/08/a2/41/08a2413b771b729a9f9df20fa97be52a.jpg",
+  },
+  {
+    name: "Ava Rodriguez",
+    role: "Data Scientist",
+    imageUrl:
+      "https://i.pinimg.com/736x/ce/31/42/ce3142d7a968fff3aecd0100572a5e8b.jpg",
+  },
+  {
+    name: "Lucas Garcia",
+    role: "Backend Engineer",
+    imageUrl:
+      "https://i.pinimg.com/736x/79/63/a5/7963a5246188d408b8f28961a0cf2b90.jpg",
+  },
+  {
+    name: "Mia Martinez",
+    role: "Frontend Developer",
+    imageUrl:
+      "https://i.pinimg.com/736x/8e/c1/f8/8ec1f80db272047cedf4c20263114387.jpg",
+  },
+  {
+    name: "Henry Wilson",
+    role: "DevOps Engineer",
+    imageUrl:
+      "https://i.pinimg.com/1200x/08/a2/41/08a2413b771b729a9f9df20fa97be52a.jpg",
+  },
+  {
+    name: "Ava Rodriguez",
+    role: "Data Scientist",
+    imageUrl:
+      "https://i.pinimg.com/736x/ce/31/42/ce3142d7a968fff3aecd0100572a5e8b.jpg",
+  },
+  {
+    name: "Lucas Garcia",
+    role: "Backend Engineer",
+    imageUrl:
+      "https://i.pinimg.com/736x/79/63/a5/7963a5246188d408b8f28961a0cf2b90.jpg",
+  },
+  {
+    name: "Mia Martinez",
+    role: "Frontend Developer",
+    imageUrl:
+      "https://i.pinimg.com/736x/8e/c1/f8/8ec1f80db272047cedf4c20263114387.jpg",
+  },
+  {
+    name: "Henry Wilson",
+    role: "DevOps Engineer",
+    imageUrl:
+      "https://i.pinimg.com/1200x/08/a2/41/08a2413b771b729a9f9df20fa97be52a.jpg",
+  },
 ];
 const TeamMemberCard = ({ member }) => {
   return (
@@ -121,23 +193,6 @@ const TeamMemberCard = ({ member }) => {
       <p className="px-3 py-1 mb-4 text-sm font-medium text-gray-600 rounded-full dark:text-gray-300 bg-gray-50 dark:bg-gray-800">
         {member.role}
       </p>
-      <div className="flex space-x-3">
-        <a
-          href="#"
-          className="p-2 text-gray-400 transition-all duration-300 bg-gray-100 rounded-full hover:text-white dark:bg-gray-800 hover:bg-blue-500 dark:hover:bg-blue-600 hover:scale-110 hover:shadow-lg"
-          aria-label={`${member.name}'s Twitter profile`}
-        ></a>
-        <a
-          href="#"
-          className="p-2 text-gray-400 transition-all duration-300 bg-gray-100 rounded-full hover:text-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-purple-500 hover:to-pink-500 hover:scale-110 hover:shadow-lg"
-          aria-label={`${member.name}'s Instagram profile`}
-        ></a>
-        <a
-          href="#"
-          className="p-2 text-gray-400 transition-all duration-300 bg-gray-100 rounded-full hover:text-white dark:bg-gray-800 hover:bg-blue-600 dark:hover:bg-blue-700 hover:scale-110 hover:shadow-lg"
-          aria-label={`${member.name}'s Facebook profile`}
-        ></a>
-      </div>
     </div>
   );
 };

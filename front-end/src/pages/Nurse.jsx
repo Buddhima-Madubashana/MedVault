@@ -121,27 +121,10 @@ const TeamMemberCard = ({ member }) => {
       <p className="px-3 py-1 mb-4 text-sm font-medium text-gray-600 rounded-full dark:text-gray-300 bg-gray-50 dark:bg-gray-800">
         {member.role}
       </p>
-      <div className="flex space-x-3">
-        <a
-          href="#"
-          className="p-2 text-gray-400 transition-all duration-300 bg-gray-100 rounded-full hover:text-white dark:bg-gray-800 hover:bg-blue-500 dark:hover:bg-blue-600 hover:scale-110 hover:shadow-lg"
-          aria-label={`${member.name}'s Twitter profile`}
-        ></a>
-        <a
-          href="#"
-          className="p-2 text-gray-400 transition-all duration-300 bg-gray-100 rounded-full hover:text-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-purple-500 hover:to-pink-500 hover:scale-110 hover:shadow-lg"
-          aria-label={`${member.name}'s Instagram profile`}
-        ></a>
-        <a
-          href="#"
-          className="p-2 text-gray-400 transition-all duration-300 bg-gray-100 rounded-full hover:text-white dark:bg-gray-800 hover:bg-blue-600 dark:hover:bg-blue-700 hover:scale-110 hover:shadow-lg"
-          aria-label={`${member.name}'s Facebook profile`}
-        ></a>
-      </div>
     </div>
   );
 };
-const PatientList = () => {
+const Nurse = () => {
   return (
     <div>
       <NavigationBar></NavigationBar>
@@ -168,4 +151,4 @@ const PatientList = () => {
     </div>
   );
 };
-export default PatientList;
+export default Nurse;

@@ -5,8 +5,6 @@ import GradientView from "../components/landing page/gradient";
 import Login2 from "../components/landing page/Log in";
 import Signin1 from "../components/landing page/Sign up";
 import ForgotPassword from "../components/landing page/Reset Password";
-import DashboardPage from "./AdminPage";
-import NavigationBar from "../components/Navigation";
 
 function LandingPage() {
   const [activeView, setActiveView] = useState("login");
