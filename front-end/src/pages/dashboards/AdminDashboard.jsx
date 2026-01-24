@@ -3,16 +3,17 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { Outlet } from "react-router-dom";
 
 const sidebarItems = [
-  { name: "Dashboard", path: "/admin" },
-  { name: "Patient Records", path: "/admin/patients" },
-  { name: "Appointments", path: "/admin/appointments" },
-  { name: "Reports", path: "/admin/reports" },
+  { name: "📊 Dashboard", path: "/admin" },
+  { name: "👥 User Management", path: "/admin/users" },
+  { name: "🛡️ Security Policies", path: "/admin/policies" },
+  { name: "📋 Audit Logs", path: "/admin/logs" },
+  { name: "⚙️ System Settings", path: "/admin/settings" },
 ];
 
 const AdminDashboard = () => {
   return (
     <DashboardLayout sidebarItems={sidebarItems}>
-      <Outlet /> {/* Allows nested pages to render in children area */}
+      <Outlet />
     </DashboardLayout>
   );
 };

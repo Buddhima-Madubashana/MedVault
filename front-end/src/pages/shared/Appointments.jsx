@@ -1,18 +1,17 @@
-import DashboardLayout from "../../components/DashboardLayout";
-
-const sidebarItems = [
-  { name: "Dashboard", path: "../" }, // go back to dashboard
-  { name: "Patient Records", path: "../patients" },
-  { name: "Appointments", path: "." },
-  { name: "Reports", path: "../reports" },
-];
+import React from "react";
 
 const Appointments = () => {
   return (
-    <DashboardLayout sidebarItems={sidebarItems}>
-      <h1 className="text-3xl font-bold">Appointments</h1>
-      <p>Custom content for Appointments page.</p>
-    </DashboardLayout>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">
+        Appointments
+      </h1>
+      <div className="p-6 bg-white rounded-lg shadow dark:bg-zinc-800">
+        <p className="text-zinc-600 dark:text-zinc-400">
+          Custom content for Appointments page.
+        </p>
+      </div>
+    </div>
   );
 };
 

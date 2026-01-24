@@ -3,10 +3,10 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { Outlet } from "react-router-dom";
 
 const sidebarItems = [
-  { name: "Dashboard", path: "/doctor" },
-  { name: "Patient Records", path: "/doctor/patients" },
-  { name: "Appointments", path: "/doctor/appointments" },
-  { name: "Reports", path: "/doctor/reports" },
+  { name: "Dashboard", path: "/nurse" },
+  { name: "Patient Records", path: "/nurse/patients" },
+  { name: "Nurse List", path: "/nurse/nurses" },
+  { name: "Doctor List", path: "/nurse/doctors" },
 ];
 
 const NurseDashboard = () => {

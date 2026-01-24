@@ -5,8 +5,8 @@ import { Outlet } from "react-router-dom";
 const sidebarItems = [
   { name: "Dashboard", path: "/doctor" },
   { name: "Patient Records", path: "/doctor/patients" },
-  { name: "Appointments", path: "/doctor/appointments" },
-  { name: "Reports", path: "/doctor/reports" },
+  { name: "Nurse List", path: "/doctor/nurses" },
+  { name: "Doctor List", path: "/doctor/doctors" },
 ];
 
 const DoctorDashboard = () => {
