@@ -4,7 +4,6 @@ import TypewriterView from "../components/landing page/AnimationText";
 import GradientView from "../components/landing page/gradient";
 import Login2 from "../components/landing page/Log in";
 import Signin1 from "../components/landing page/Sign up";
-import ForgotPassword from "../components/landing page/Reset Password";
 
 function LandingPage() {
   const [activeView, setActiveView] = useState("login");
