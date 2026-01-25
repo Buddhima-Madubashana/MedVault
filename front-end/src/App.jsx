@@ -16,8 +16,13 @@ import DashboardHome from "./pages/dashboards/DashboardHome";
 
 // Shared Pages
 import PatientRecords from "./pages/shared/PatientRecords";
+import DoctorList from "./pages/shared/DoctorList";
+import NurseList from "./pages/shared/NurseList";
 
-// --- Simple Placeholders for new pages ---
+// Admin Pages
+import UserManagement from "./pages/admin/UserManagement";
+
+// --- Simple Placeholder for remaining items ---
 const Placeholder = ({ title }) => (
   <div className="p-6 bg-white rounded shadow dark:bg-zinc-800">
     <h2 className="text-2xl font-bold dark:text-white">{title}</h2>
@@ -49,10 +54,8 @@ function App() {
             }
           >
             <Route index element={<DashboardHome />} />
-            <Route
-              path="users"
-              element={<Placeholder title="User Management" />}
-            />
+            {/* Replaced Placeholder with real UserManagement */}
+            <Route path="users" element={<UserManagement />} />
             <Route
               path="policies"
               element={<Placeholder title="Security Policies" />}
@@ -75,11 +78,9 @@ function App() {
           >
             <Route index element={<DashboardHome />} />
             <Route path="patients" element={<PatientRecords />} />
-            <Route path="nurses" element={<Placeholder title="Nurse List" />} />
-            <Route
-              path="doctors"
-              element={<Placeholder title="Doctor List" />}
-            />
+            {/* Replaced Placeholders with real lists */}
+            <Route path="nurses" element={<NurseList />} />
+            <Route path="doctors" element={<DoctorList />} />
           </Route>
 
           {/* --- NURSE ROUTES --- */}
@@ -93,11 +94,9 @@ function App() {
           >
             <Route index element={<DashboardHome />} />
             <Route path="patients" element={<PatientRecords />} />
-            <Route path="nurses" element={<Placeholder title="Nurse List" />} />
-            <Route
-              path="doctors"
-              element={<Placeholder title="Doctor List" />}
-            />
+            {/* Replaced Placeholders with real lists */}
+            <Route path="nurses" element={<NurseList />} />
+            <Route path="doctors" element={<DoctorList />} />
           </Route>
         </Routes>
       </Router>

@@ -1,7 +1,6 @@
 "use client";
-import React, { useState } from "react";
-
-import { useAuth } from "../../Contexts/AuthContext";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext"; // Ensure path matches your structure
 import { useNavigate } from "react-router-dom";
 
 const UserIcon = () => (
@@ -63,39 +62,32 @@ const EyeOffIcon = () => (
 export default function Login({ onSwitchToSignup, onSwitchToForgetPassword }) {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState(""); // kept for UI, but not used for auth
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, role } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  // Redirect automatically when role is updated
+  useEffect(() => {
+    if (role === "Admin") navigate("/admin");
+    else if (role === "Doctor") navigate("/doctor");
+    else if (role === "Nurse") navigate("/nurse");
+  }, [role, navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    // Call login function from context (sets role based on email)
-    login(email);
+    // Pass BOTH email and password
+    const result = await login(email, password);
 
-    // Immediately check role after login attempt
-    const enteredRole = email.toLowerCase().includes("admin")
-      ? "Admin"
-      : email.toLowerCase().includes("doctor")
-        ? "Doctor"
-        : email.toLowerCase().includes("nurse")
-          ? "Nurse"
-          : null;
+    setLoading(false);
 
-    if (enteredRole === "Admin") {
-      navigate("/admin");
-    } else if (enteredRole === "Doctor") {
-      navigate("/doctor");
-    } else if (enteredRole === "Nurse") {
-      navigate("/nurse");
-    } else {
-      alert(
-        "Please use one of these emails:\n" +
-          "• admin@medvault.com\n" +
-          "• doctor@medvault.com\n" +
-          "• nurse@medvault.com",
-      );
+    if (!result.success) {
+      setError(result.message || "Failed to log in");
     }
   };
 
@@ -116,11 +108,17 @@ export default function Login({ onSwitchToSignup, onSwitchToForgetPassword }) {
           </div>
         </div>
 
+        {error && (
+          <div className="p-3 text-sm text-red-600 bg-red-100 rounded-md dark:bg-red-900/30 dark:text-red-400">
+            {error}
+          </div>
+        )}
+
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <label
               htmlFor="email"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-900 dark:text-zinc-50"
+              className="text-sm font-medium leading-none text-zinc-900 dark:text-zinc-50"
             >
               Email
             </label>
@@ -131,14 +129,14 @@ export default function Login({ onSwitchToSignup, onSwitchToForgetPassword }) {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
               required
-              className="flex w-full px-3 py-5 text-sm transition-colors bg-white border rounded-md shadow-sm h-9 border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full px-3 py-5 text-sm bg-white border rounded-md outline-none border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 dark:text-white"
             />
           </div>
 
           <div className="space-y-2">
             <label
               htmlFor="password"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-900 dark:text-zinc-50"
+              className="text-sm font-medium leading-none text-zinc-900 dark:text-zinc-50"
             >
               Password
             </label>
@@ -149,7 +147,8 @@ export default function Login({ onSwitchToSignup, onSwitchToForgetPassword }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                className="flex w-full px-3 py-5 pr-10 text-sm transition-colors bg-white border rounded-md shadow-sm h-9 border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
+                required
+                className="flex w-full px-3 py-5 pr-10 text-sm bg-white border rounded-md outline-none border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 dark:text-white"
               />
               <button
                 type="button"
@@ -163,19 +162,20 @@ export default function Login({ onSwitchToSignup, onSwitchToForgetPassword }) {
 
           <button
             type="submit"
-            className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium transition-colors rounded-md shadow whitespace-nowrap focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:pointer-events-none disabled:opacity-50 bg-zinc-900 text-zinc-50 hover:bg-zinc-900/90 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90 h-9"
+            disabled={loading}
+            className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium transition-colors rounded-md shadow bg-zinc-900 text-zinc-50 hover:bg-zinc-900/90 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90 h-9 disabled:opacity-50"
           >
-            Sign In
+            {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>
 
-        <div className="space-y-2 text-center">
+        {/* <div className="space-y-2 text-center">
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             Don&apos;t have an account?{" "}
             <a
               onClick={onSwitchToSignup}
               href="#"
-              className="font-medium underline transition-colors text-zinc-900 dark:text-zinc-50 underline-offset-4 hover:text-zinc-700 dark:hover:text-zinc-300"
+              className="font-medium underline transition-colors text-zinc-900 dark:text-zinc-50 hover:text-zinc-700 dark:hover:text-zinc-300"
             >
               Sign up
             </a>
@@ -183,11 +183,11 @@ export default function Login({ onSwitchToSignup, onSwitchToForgetPassword }) {
           <a
             onClick={onSwitchToForgetPassword}
             href="#"
-            className="text-sm font-medium underline transition-colors text-zinc-900 dark:text-zinc-50 underline-offset-4 hover:text-zinc-700 dark:hover:text-zinc-300"
+            className="text-sm font-medium underline transition-colors text-zinc-900 dark:text-zinc-50 hover:text-zinc-700 dark:hover:text-zinc-300"
           >
             Forgot your password?
           </a>
-        </div>
+        </div> */}
       </div>
     </div>
   );
