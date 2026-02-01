@@ -106,11 +106,6 @@ This project serves as both a functional prototype and an educational platform f
 
 ## **👥 User Roles & Access**
 
-### **Patient**
-- View own medical records only
-- Basic interface for non-technical users
-- Access to personal treatment history
-
 ### **Nurse**
 - View basic patient information
 - Context-restricted access (e.g., limited after-hours)
