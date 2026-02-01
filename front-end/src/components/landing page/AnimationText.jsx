@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 const TypewriterText = ({
-  text = "Scure Paitent data management system...",
+  text = "Secure Paitent data management system...",
   speed = 100,
   deleteSpeed = 50,
   pauseDuration = 2000,
