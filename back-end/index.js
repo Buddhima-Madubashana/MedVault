@@ -6,6 +6,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/users");
 const patientRoutes = require("./routes/patients");
+const patientRequestRoutes = require("./routes/patientRequests");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +25,7 @@ mongoose
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/patients", patientRoutes);
+app.use("/api/patient-requests", patientRequestRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

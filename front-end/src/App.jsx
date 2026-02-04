@@ -22,7 +22,11 @@ import NurseList from "./pages/shared/NurseList";
 // Admin Pages
 import UserManagement from "./pages/admin/UserManagement";
 
-// --- Simple Placeholder for remaining items ---
+// New Approval Pages
+import PendingApprovals from "./pages/nurse/PendingApprovals";
+import ReviewApprovals from "./pages/doctor/ReviewApprovals";
+
+// Placeholder
 const Placeholder = ({ title }) => (
   <div className="p-6 bg-white rounded shadow dark:bg-zinc-800">
     <h2 className="text-2xl font-bold dark:text-white">{title}</h2>
@@ -54,7 +58,7 @@ function App() {
             }
           >
             <Route index element={<DashboardHome />} />
-            {/* Replaced Placeholder with real UserManagement */}
+            <Route path="patients" element={<PatientRecords />} />
             <Route path="users" element={<UserManagement />} />
             <Route
               path="policies"
@@ -78,7 +82,8 @@ function App() {
           >
             <Route index element={<DashboardHome />} />
             <Route path="patients" element={<PatientRecords />} />
-            {/* Replaced Placeholders with real lists */}
+            <Route path="reviews" element={<ReviewApprovals />} />{" "}
+            {/* New Route */}
             <Route path="nurses" element={<NurseList />} />
             <Route path="doctors" element={<DoctorList />} />
           </Route>
@@ -94,7 +99,8 @@ function App() {
           >
             <Route index element={<DashboardHome />} />
             <Route path="patients" element={<PatientRecords />} />
-            {/* Replaced Placeholders with real lists */}
+            <Route path="approvals" element={<PendingApprovals />} />{" "}
+            {/* New Route */}
             <Route path="nurses" element={<NurseList />} />
             <Route path="doctors" element={<DoctorList />} />
           </Route>

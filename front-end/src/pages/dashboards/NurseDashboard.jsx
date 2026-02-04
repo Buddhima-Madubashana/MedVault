@@ -5,6 +5,7 @@ import { Outlet } from "react-router-dom";
 const sidebarItems = [
   { name: "Dashboard", path: "/nurse" },
   { name: "Patient Records", path: "/nurse/patients" },
+  { name: "Pending Approvals", path: "/nurse/approvals" }, // New Link
   { name: "Nurse List", path: "/nurse/nurses" },
   { name: "Doctor List", path: "/nurse/doctors" },
 ];
