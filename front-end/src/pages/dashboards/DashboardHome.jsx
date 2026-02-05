@@ -50,7 +50,6 @@ const DashboardHome = () => {
   // 2. Fetch Live Activity (Only for Admin, Limit 3)
   useEffect(() => {
     if (role === "Admin") {
-      // Changed limit from 5 to 3
       fetch("http://localhost:5000/api/audit-logs?limit=3")
         .then((res) => res.json())
         .then((data) => setActivities(data))
@@ -161,6 +160,7 @@ const DashboardHome = () => {
                 {user.specialty || user.ward || "System Administrator"}
               </p>
             </div>
+            {/* Show Patient Stats for Non-Admins */}
             {role !== "Admin" && (
               <div className="grid grid-cols-2 pt-6 mt-6 border-t divide-x divide-slate-100 dark:divide-slate-700 border-slate-100 dark:border-slate-700">
                 <div>
@@ -183,43 +183,45 @@ const DashboardHome = () => {
             )}
           </WidgetCard>
 
-          {/* Quick Stats */}
-          <WidgetCard>
-            <h3 className="mb-4 text-sm font-bold tracking-wider uppercase text-slate-400">
-              System Status
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 border bg-slate-50 dark:bg-slate-900/50 rounded-xl border-slate-100 dark:border-slate-700">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 text-green-600 bg-green-100 rounded-lg">
-                    <Shield size={18} />
+          {/* Quick Stats (ADMIN ONLY) */}
+          {role === "Admin" && (
+            <WidgetCard>
+              <h3 className="mb-4 text-sm font-bold tracking-wider uppercase text-slate-400">
+                System Status
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 border bg-slate-50 dark:bg-slate-900/50 rounded-xl border-slate-100 dark:border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 text-green-600 bg-green-100 rounded-lg">
+                      <Shield size={18} />
+                    </div>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      Security Level
+                    </span>
                   </div>
-                  <span className="font-medium text-slate-700 dark:text-slate-300">
-                    Security Level
+                  <span className="flex items-center gap-1 font-bold text-green-600">
+                    <CheckCircle size={14} /> High
                   </span>
                 </div>
-                <span className="flex items-center gap-1 font-bold text-green-600">
-                  <CheckCircle size={14} /> High
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 border bg-slate-50 dark:bg-slate-900/50 rounded-xl border-slate-100 dark:border-slate-700">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 text-blue-600 bg-blue-100 rounded-lg">
-                    <Activity size={18} />
+                <div className="flex items-center justify-between p-3 border bg-slate-50 dark:bg-slate-900/50 rounded-xl border-slate-100 dark:border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 text-blue-600 bg-blue-100 rounded-lg">
+                      <Activity size={18} />
+                    </div>
+                    <span className="font-medium text-slate-700 dark:text-slate-300">
+                      System Load
+                    </span>
                   </div>
-                  <span className="font-medium text-slate-700 dark:text-slate-300">
-                    System Load
-                  </span>
+                  <span className="font-bold text-blue-600">Normal</span>
                 </div>
-                <span className="font-bold text-blue-600">Normal</span>
               </div>
-            </div>
-          </WidgetCard>
+            </WidgetCard>
+          )}
         </div>
 
         {/* Right Column: Activity & Staff */}
         <div className="space-y-8 lg:col-span-2">
-          {/* --- ADMIN ONLY: Live Activity Feed (Limit 3) --- */}
+          {/* Live Activity Feed (ADMIN ONLY) */}
           {role === "Admin" && (
             <WidgetCard>
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
@@ -284,7 +286,7 @@ const DashboardHome = () => {
             </WidgetCard>
           )}
 
-          {/* --- NON-ADMIN: Active Staff List --- */}
+          {/* Active Staff List (NON-ADMIN ONLY) */}
           {role !== "Admin" && (
             <WidgetCard>
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
