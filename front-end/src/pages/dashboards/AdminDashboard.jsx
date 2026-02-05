@@ -7,7 +7,6 @@ const sidebarItems = [
   { name: "User Management", path: "/admin/users" },
   { name: "Locked Accounts", path: "/admin/locked" },
   { name: "All Users", path: "/admin/all-users" },
-  { name: "Patient Records", path: "/admin/patients" },
   { name: "Audit Logs", path: "/admin/logs" },
   { name: "System Settings", path: "/admin/settings" },
 ];
