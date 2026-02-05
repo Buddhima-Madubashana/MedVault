@@ -22,13 +22,14 @@ const ReviewApprovals = () => {
   useEffect(() => {
     fetchRequests();
   }, [user]);
-
   const handleAction = async (id, action) => {
     try {
+      // If Approve: POST
+      // If Reject: DELETE -> Add ?actionBy=...
       const endpoint =
         action === "approve"
           ? `http://localhost:5000/api/patient-requests/${id}/approve`
-          : `http://localhost:5000/api/patient-requests/${id}`;
+          : `http://localhost:5000/api/patient-requests/${id}?actionBy=${user._id}`; // <--- UPDATED
 
       const method = action === "approve" ? "POST" : "DELETE";
       const res = await fetch(endpoint, { method });

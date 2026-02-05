@@ -79,21 +79,18 @@ const PatientRecords = () => {
 
     try {
       if (role === "Doctor" || role === "Admin") {
+        // Direct Add: Pass 'actionBy'
         const res = await fetch("http://localhost:5000/api/patients", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(patientData),
+          body: JSON.stringify({ ...patientData, actionBy: user._id }), // <--- UPDATED
         });
         if (res.ok)
           showNotification("success", "Added", "Patient added successfully.");
       } else {
+        // ... Nurse logic remains same (User ID is already passed as nurseId) ...
         if (!newPatient.doctorId) {
-          showNotification(
-            "error",
-            "Required",
-            "Please select an approving doctor.",
-          );
-          return;
+          /*...*/ return;
         }
         const res = await fetch("http://localhost:5000/api/patient-requests", {
           method: "POST",
@@ -124,18 +121,20 @@ const PatientRecords = () => {
     }
   };
 
-  // --- 3. HANDLE DELETE (Request vs Direct) ---
+  // --- 3. HANDLE DELETE ---
   const initiateDelete = (patient) => {
     if (role === "Doctor" || role === "Admin") {
-      // Direct Delete Confirmation
+      // Direct Delete: Pass 'actionBy' in query
       setConfirmDialog({
         isOpen: true,
         title: "Delete Record?",
         message: `Are you sure you want to permanently delete the record for ${patient.name}?`,
         onConfirm: () => {
-          fetch(`http://localhost:5000/api/patients/${patient._id}`, {
-            method: "DELETE",
-          }).then(() => {
+          // <--- UPDATED URL below
+          fetch(
+            `http://localhost:5000/api/patients/${patient._id}?actionBy=${user._id}`,
+            { method: "DELETE" },
+          ).then(() => {
             showNotification("success", "Deleted", "Record removed.");
             fetchData();
           });
