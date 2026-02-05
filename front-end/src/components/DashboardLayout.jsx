@@ -9,9 +9,10 @@ import {
   FileText,
   LogOut,
   Bell,
-  Search,
   ShieldCheck,
   Activity,
+  Lock, // Added missing icon import
+  UserCog, // Added missing icon import
 } from "lucide-react";
 
 const DashboardLayout = ({ children, sidebarItems }) => {
@@ -27,13 +28,17 @@ const DashboardLayout = ({ children, sidebarItems }) => {
   // Icon mapper for dynamic sidebar items
   const getIcon = (name) => {
     if (name.includes("Dashboard")) return <LayoutDashboard size={20} />;
-    if (name.includes("Patient")) return <Users size={20} />;
+    if (name.includes("Patient") || name.includes("All Users"))
+      return <Users size={20} />;
     if (name.includes("Appointment")) return <Calendar size={20} />;
     if (name.includes("Report") || name.includes("Logs"))
       return <FileText size={20} />;
-    if (name.includes("Security")) return <ShieldCheck size={20} />;
+    if (name.includes("Security") || name.includes("Settings"))
+      return <ShieldCheck size={20} />;
     if (name.includes("Nurse") || name.includes("Doctor"))
       return <Activity size={20} />;
+    if (name.includes("User Management")) return <UserCog size={20} />;
+    if (name.includes("Locked")) return <Lock size={20} />;
     return <FileText size={20} />;
   };
 
@@ -57,7 +62,6 @@ const DashboardLayout = ({ children, sidebarItems }) => {
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {sidebarItems.map((item, index) => {
-            // Logic to highlight active link
             const isActive =
               location.pathname === item.path ||
               (item.path !== "/" && location.pathname.endsWith(item.path));
@@ -103,17 +107,10 @@ const DashboardLayout = ({ children, sidebarItems }) => {
       <div className="relative flex flex-col flex-1 h-screen overflow-hidden">
         {/* Top Header */}
         <header className="z-10 flex items-center justify-between h-20 px-8 bg-white border-b shadow-sm dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-          {/* Search Bar */}
-          <div className="flex items-center gap-3 w-96 bg-slate-100 dark:bg-slate-700/50 px-4 py-2.5 rounded-full focus-within:ring-2 ring-blue-500/20 transition-all">
-            <Search size={18} className="text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search records, patients, or docs..."
-              className="w-full text-sm bg-transparent border-none outline-none text-slate-700 dark:text-slate-200 placeholder:text-slate-400"
-            />
-          </div>
+          {/* LEFT SIDE: Spacer (Search bar removed) */}
+          <div className="flex-1"></div>
 
-          {/* Right Actions */}
+          {/* RIGHT SIDE: Actions & Profile */}
           <div className="flex items-center gap-6">
             <button className="relative p-2 transition-colors rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
               <Bell size={20} />
@@ -143,7 +140,7 @@ const DashboardLayout = ({ children, sidebarItems }) => {
         </header>
 
         {/* Dynamic Content Scroll Area */}
-        <main className="flex-1 p-8 overflow-y-auto scroll-smooth">
+        <main className="flex-1 p-8 overflow-y-auto scroll-smooth bg-slate-50 dark:bg-slate-900">
           <div className="mx-auto duration-500 max-w-7xl animate-in fade-in slide-in-from-bottom-4">
             {children}
           </div>
