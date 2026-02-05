@@ -52,4 +52,43 @@ router.post("/:id/unlock", async (req, res) => {
   }
 });
 
+// --- NEW: Delete User (Doctor/Nurse/Admin) ---
+router.delete("/:id", async (req, res) => {
+  try {
+    const { actionBy } = req.query; // Admin ID
+    const userToDelete = await User.findById(req.params.id);
+
+    if (!userToDelete)
+      return res.status(404).json({ message: "User not found" });
+
+    // Prevent deleting the last Admin (optional safety check, good practice)
+    if (userToDelete.role === "Admin") {
+      const adminCount = await User.countDocuments({ role: "Admin" });
+      if (adminCount <= 1)
+        return res
+          .status(400)
+          .json({ message: "Cannot delete the only Admin." });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    // LOG ACTION
+    if (actionBy) {
+      const admin = await User.findById(actionBy);
+      if (admin) {
+        await logAction(
+          admin,
+          "USER_DELETED",
+          `Deleted ${userToDelete.role} account: ${userToDelete.name}`,
+          req,
+        );
+      }
+    }
+
+    res.json({ message: "User deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
