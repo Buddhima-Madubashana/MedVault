@@ -18,6 +18,7 @@ import DashboardHome from "./pages/dashboards/DashboardHome";
 import PatientRecords from "./pages/shared/PatientRecords";
 import DoctorList from "./pages/shared/DoctorList";
 import NurseList from "./pages/shared/NurseList";
+import LockedAccounts from "./pages/admin/LockedAccounts";
 
 // Admin Pages
 import UserManagement from "./pages/admin/UserManagement";
@@ -60,6 +61,7 @@ function App() {
             <Route index element={<DashboardHome />} />
             <Route path="patients" element={<PatientRecords />} />
             <Route path="users" element={<UserManagement />} />
+            <Route path="locked" element={<LockedAccounts />} />
             <Route
               path="policies"
               element={<Placeholder title="Security Policies" />}

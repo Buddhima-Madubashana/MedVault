@@ -5,7 +5,8 @@ import { Outlet } from "react-router-dom";
 const sidebarItems = [
   { name: "Dashboard", path: "/admin" },
   { name: "User Management", path: "/admin/users" },
-  { name: "Security Policies", path: "/admin/policies" },
+  { name: "Locked Accounts", path: "/admin/locked" }, // New Link
+  { name: "Patient Records", path: "/admin/patients" },
   { name: "Audit Logs", path: "/admin/logs" },
   { name: "System Settings", path: "/admin/settings" },
 ];

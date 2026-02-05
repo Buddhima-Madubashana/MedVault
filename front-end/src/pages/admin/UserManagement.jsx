@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { UserPlus, Mail, Lock, Shield, Image } from "lucide-react";
+import Notification from "../../components/Notification"; // Import Notification
+import { AnimatePresence } from "framer-motion";
 
 const UserManagement = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +13,9 @@ const UserManagement = () => {
     ward: "",
     imageUrl: "",
   });
-  const [message, setMessage] = useState("");
+
+  // Replaced 'message' string with 'notification' object
+  const [notification, setNotification] = useState(null);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -25,8 +29,14 @@ const UserManagement = () => {
         body: JSON.stringify(formData),
       });
       const data = await response.json();
+
       if (response.ok) {
-        setMessage("Success: User added successfully!");
+        // Show Success Toast
+        setNotification({
+          type: "success",
+          title: "User Created",
+          message: `${formData.role} account added successfully.`,
+        });
         setFormData({
           name: "",
           email: "",
@@ -37,10 +47,19 @@ const UserManagement = () => {
           imageUrl: "",
         });
       } else {
-        setMessage("Error: " + data.message);
+        // Show Error Toast
+        setNotification({
+          type: "error",
+          title: "Registration Failed",
+          message: data.message,
+        });
       }
     } catch (err) {
-      setMessage("Error: Server connection failed.");
+      setNotification({
+        type: "error",
+        title: "Network Error",
+        message: "Server connection failed.",
+      });
     }
   };
 
@@ -69,14 +88,6 @@ const UserManagement = () => {
             </p>
           </div>
         </div>
-
-        {message && (
-          <div
-            className={`p-4 mb-6 rounded-xl text-sm font-bold ${message.includes("Error") ? "bg-red-50 text-red-600 border border-red-200" : "bg-green-50 text-green-600 border border-green-200"}`}
-          >
-            {message}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -150,7 +161,7 @@ const UserManagement = () => {
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="w-full py-3 pr-4 transition-all border outline-none appearance-none pl-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
+                  className="w-full py-3 pr-4 transition-all border outline-none appearance-none cursor-pointer pl-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="Doctor">Doctor</option>
                   <option value="Nurse">Nurse</option>
@@ -223,6 +234,18 @@ const UserManagement = () => {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* --- TOAST NOTIFICATIONS --- */}
+      <div className="fixed z-50 bottom-6 right-6">
+        <AnimatePresence>
+          {notification && (
+            <Notification
+              {...notification}
+              onClose={() => setNotification(null)}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

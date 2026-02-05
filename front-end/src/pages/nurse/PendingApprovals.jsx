@@ -1,12 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Trash2, FileText, CheckCircle, XCircle } from "lucide-react";
+import {
+  Clock,
+  Trash2,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import Notification from "../../components/Notification";
+import { AnimatePresence, motion } from "framer-motion";
 
 const PendingApprovals = () => {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [notification, setNotification] = useState(null);
+
+  // Custom Confirmation Dialog
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
 
   useEffect(() => {
     if (user && user._id) {
@@ -19,21 +34,28 @@ const PendingApprovals = () => {
     }
   }, [user]);
 
+  const initiateDelete = (id, patientName) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Cancel Request?",
+      message: `Are you sure you want to cancel the admission request for ${patientName}?`,
+      onConfirm: () => handleDelete(id),
+    });
+  };
+
   const handleDelete = async (id) => {
-    if (window.confirm("Cancel this admission request?")) {
-      try {
-        await fetch(`http://localhost:5000/api/patient-requests/${id}`, {
-          method: "DELETE",
-        });
-        setRequests(requests.filter((req) => req._id !== id));
-        setNotification({
-          type: "success",
-          title: "Request Cancelled",
-          message: "The request has been removed.",
-        });
-      } catch (err) {
-        console.error(err);
-      }
+    try {
+      await fetch(`http://localhost:5000/api/patient-requests/${id}`, {
+        method: "DELETE",
+      });
+      setRequests(requests.filter((req) => req._id !== id));
+      setNotification({
+        type: "success",
+        title: "Request Cancelled",
+        message: "The request has been removed.",
+      });
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -108,7 +130,7 @@ const PendingApprovals = () => {
                   <FileText size={16} /> View Details
                 </button>
                 <button
-                  onClick={() => handleDelete(req._id)}
+                  onClick={() => initiateDelete(req._id, req.name)}
                   className="p-2 text-red-600 transition-colors border border-red-200 rounded-xl hover:bg-red-50"
                 >
                   <Trash2 size={18} />
@@ -119,14 +141,67 @@ const PendingApprovals = () => {
         </div>
       )}
 
-      {notification && (
-        <div className="fixed z-50 bottom-6 right-6">
-          <Notification
-            {...notification}
-            onClose={() => setNotification(null)}
-          />
-        </div>
-      )}
+      {/* --- CUSTOM CONFIRMATION MODAL --- */}
+      <AnimatePresence>
+        {confirmDialog.isOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/20 backdrop-blur-[2px] p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-sm p-6 bg-white border shadow-2xl dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 p-3 rounded-full bg-red-50 dark:bg-red-900/20">
+                  <AlertCircle
+                    className="text-red-600 dark:text-red-400"
+                    size={24}
+                  />
+                </div>
+                <div className="flex-1">
+                  <h3 className="mb-1 text-lg font-bold text-slate-900 dark:text-white">
+                    {confirmDialog.title}
+                  </h3>
+                  <p className="mb-6 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                    {confirmDialog.message}
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() =>
+                        setConfirmDialog({ ...confirmDialog, isOpen: false })
+                      }
+                      className="px-4 py-2 text-sm font-medium transition-colors rounded-lg text-slate-600 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                        setConfirmDialog({ ...confirmDialog, isOpen: false });
+                      }}
+                      className="px-4 py-2 text-sm font-bold text-white transition-all bg-red-600 rounded-lg shadow-md hover:bg-red-700 shadow-red-500/20"
+                    >
+                      Confirm Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- TOAST NOTIFICATIONS --- */}
+      <div className="fixed z-50 bottom-6 right-6">
+        <AnimatePresence>
+          {notification && (
+            <Notification
+              {...notification}
+              onClose={() => setNotification(null)}
+            />
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
