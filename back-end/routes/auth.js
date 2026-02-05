@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { logAction } = require("../utils/logger"); // Import Logger
 
 // LOGIN ROUTE (Updated with Lockout Logic)
 router.post("/login", async (req, res) => {
@@ -51,12 +52,16 @@ router.post("/login", async (req, res) => {
     }
 
     // --- SUCCESS LOGIC ---
+
     // Reset counters on successful login
     if (user.failedLoginAttempts > 0) {
       user.failedLoginAttempts = 0;
       user.isLocked = false;
       await user.save();
     }
+
+    // LOG LOGIN
+    await logAction(user, "LOGIN_SUCCESS", "User logged in successfully", req);
 
     // Create Token
     const secret = process.env.JWT_SECRET || "secret";
@@ -94,6 +99,15 @@ router.post("/register", async (req, res) => {
       imageUrl,
     });
     await newUser.save();
+    // LOG REGISTER
+    // Note: Since req.user isn't set yet, we might need to manually pass admin info if available,
+    // or just log the new user creation context. For now, let's log the new user:
+    await logAction(
+      newUser,
+      "USER_REGISTERED",
+      `New ${newUser.role} account created: ${newUser.email}`,
+      req,
+    );
     res.status(201).json(newUser);
   } catch (err) {
     res.status(500).json({ error: err.message });

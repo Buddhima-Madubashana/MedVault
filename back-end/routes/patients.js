@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Patient = require("../models/Patient");
+const { logAction } = require("../utils/logger");
 
 // Get All
 router.get("/", async (req, res) => {

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
+const { logAction } = require("../utils/logger");
 
 // Get Doctors
 router.get("/doctors", async (req, res) => {
@@ -41,6 +42,9 @@ router.post("/:id/unlock", async (req, res) => {
     user.isLocked = false;
     user.failedLoginAttempts = 0;
     await user.save();
+
+    // LOG UNLOCK
+    await logAction(user, "ACCOUNT_UNLOCKED", `Account unlocked by Admin`, req);
 
     res.json({ message: "Account unlocked successfully", user });
   } catch (err) {

@@ -22,6 +22,7 @@ import LockedAccounts from "./pages/admin/LockedAccounts";
 
 // Admin Pages
 import UserManagement from "./pages/admin/UserManagement";
+import AuditLogs from "./pages/admin/AuditLogs";
 
 // New Approval Pages
 import PendingApprovals from "./pages/nurse/PendingApprovals";
@@ -58,6 +59,8 @@ function App() {
               </ProtectedRoute>
             }
           >
+            <Route path="logs" element={<AuditLogs />} />{" "}
+            {/* Update this line (it was a placeholder before) */}
             <Route index element={<DashboardHome />} />
             <Route path="patients" element={<PatientRecords />} />
             <Route path="users" element={<UserManagement />} />

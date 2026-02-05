@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import {
   Clock,
   Activity,
   Users,
   Shield,
   CheckCircle,
-  FileText,
+  UserPlus,
+  AlertTriangle,
 } from "lucide-react";
 
 // Greeting Logic
@@ -17,10 +19,10 @@ const getGreeting = () => {
   return "Good Evening";
 };
 
-// --- UPDATED WIDGET CARD (Stronger Border) ---
+// --- Reusable Widget Card (Blue Border Theme) ---
 const WidgetCard = ({ children, className = "" }) => (
   <div
-    className={`bg-white dark:bg-slate-800 rounded-2xl border border-blue-300 dark:border-blue-700 shadow-md shadow-blue-100/50 dark:shadow-blue-900/20 p-6 ${className}`}
+    className={`bg-white dark:bg-slate-800 rounded-2xl border border-blue-300 dark:border-blue-700 shadow-sm shadow-blue-200/50 dark:shadow-blue-900/20 p-6 ${className}`}
   >
     {children}
   </div>
@@ -28,9 +30,13 @@ const WidgetCard = ({ children, className = "" }) => (
 
 const DashboardHome = () => {
   const { user, role } = useAuth();
+  const navigate = useNavigate();
   const greeting = getGreeting();
-  const [staffList, setStaffList] = useState([]);
 
+  const [staffList, setStaffList] = useState([]);
+  const [activities, setActivities] = useState([]);
+
+  // 1. Fetch Staff (Only for Doctors/Nurses)
   useEffect(() => {
     if (role === "Doctor" || role === "Nurse") {
       const endpoint = role === "Doctor" ? "doctors" : "nurses";
@@ -41,6 +47,51 @@ const DashboardHome = () => {
     }
   }, [role]);
 
+  // 2. Fetch Live Activity (Only for Admin, Limit 3)
+  useEffect(() => {
+    if (role === "Admin") {
+      // Changed limit from 5 to 3
+      fetch("http://localhost:5000/api/audit-logs?limit=3")
+        .then((res) => res.json())
+        .then((data) => setActivities(data))
+        .catch((err) => console.error("Failed to load activity feed:", err));
+    }
+  }, [role]);
+
+  // Helper to choose icon/color for log actions
+  const getLogStyle = (action) => {
+    if (
+      action.includes("FAIL") ||
+      action.includes("BLOCK") ||
+      action.includes("DELETE")
+    ) {
+      return {
+        color: "bg-red-500",
+        icon: <AlertTriangle size={14} className="text-white" />,
+      };
+    }
+    if (
+      action.includes("ADD") ||
+      action.includes("CREATE") ||
+      action.includes("REGISTER")
+    ) {
+      return {
+        color: "bg-green-500",
+        icon: <UserPlus size={14} className="text-white" />,
+      };
+    }
+    if (action.includes("LOGIN") || action.includes("UNLOCK")) {
+      return {
+        color: "bg-blue-500",
+        icon: <Shield size={14} className="text-white" />,
+      };
+    }
+    return {
+      color: "bg-slate-400",
+      icon: <Activity size={14} className="text-white" />,
+    };
+  };
+
   if (!user)
     return (
       <div className="p-10 text-center text-slate-500">
@@ -50,7 +101,7 @@ const DashboardHome = () => {
 
   return (
     <div className="space-y-8">
-      {/* Welcome Banner */}
+      {/* 1. Welcome Banner */}
       <div className="relative p-8 overflow-hidden text-white shadow-xl bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl shadow-blue-900/20">
         <div className="relative z-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div>
@@ -58,8 +109,9 @@ const DashboardHome = () => {
               {greeting}, {user.name.split(" ")[0]}
             </h1>
             <p className="max-w-xl text-lg text-blue-100 opacity-90">
-              Welcome to your secure dashboard. Check your activity feed for
-              recent updates.
+              {role === "Admin"
+                ? "System status is stable. Review the latest security events below."
+                : "Welcome to your secure dashboard. Check your schedule and patient lists."}
             </p>
           </div>
           <div className="flex gap-3">
@@ -73,17 +125,20 @@ const DashboardHome = () => {
             )}
           </div>
         </div>
+        {/* Decorative Circles */}
         <div className="absolute top-0 right-0 w-64 h-64 -mt-10 -mr-10 rounded-full bg-white/5 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-40 h-40 -mb-10 -ml-10 rounded-full bg-white/10 blur-2xl"></div>
       </div>
 
+      {/* 2. Main Content Grid */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Left Column */}
+        {/* Left Column: Profile & Stats */}
         <div className="space-y-8 lg:col-span-1">
+          {/* Profile Card */}
           <WidgetCard className="relative overflow-hidden text-center group">
             <div className="absolute top-0 left-0 w-full h-24 bg-blue-50/50 dark:bg-slate-700/50"></div>
             <div className="relative z-10 inline-block">
-              <div className="p-1 mx-auto bg-white rounded-full shadow-md w-28 h-28 dark:bg-slate-800 ring-1 ring-blue-100 dark:ring-slate-700">
+              <div className="p-1 mx-auto bg-white rounded-full shadow-md w-28 h-28 dark:bg-slate-800 ring-1 ring-blue-200 dark:ring-slate-700">
                 <img
                   src={
                     user.imageUrl ||
@@ -106,8 +161,29 @@ const DashboardHome = () => {
                 {user.specialty || user.ward || "System Administrator"}
               </p>
             </div>
+            {role !== "Admin" && (
+              <div className="grid grid-cols-2 pt-6 mt-6 border-t divide-x divide-slate-100 dark:divide-slate-700 border-slate-100 dark:border-slate-700">
+                <div>
+                  <span className="block text-2xl font-bold text-slate-800 dark:text-white">
+                    12
+                  </span>
+                  <span className="text-xs font-bold uppercase text-slate-400">
+                    Patients
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-2xl font-bold text-slate-800 dark:text-white">
+                    8h
+                  </span>
+                  <span className="text-xs font-bold uppercase text-slate-400">
+                    On Shift
+                  </span>
+                </div>
+              </div>
+            )}
           </WidgetCard>
 
+          {/* Quick Stats */}
           <WidgetCard>
             <h3 className="mb-4 text-sm font-bold tracking-wider uppercase text-slate-400">
               System Status
@@ -141,68 +217,74 @@ const DashboardHome = () => {
           </WidgetCard>
         </div>
 
-        {/* Right Column */}
+        {/* Right Column: Activity & Staff */}
         <div className="space-y-8 lg:col-span-2">
-          <WidgetCard>
-            <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
-              <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                <Clock size={20} className="text-blue-500" /> Live Activity Feed
-              </h3>
-              <button className="text-sm font-medium text-blue-600 hover:underline">
-                View All
-              </button>
-            </div>
-            <div className="px-2 space-y-6">
-              {[
-                {
-                  time: "10:42 AM",
-                  title: "Vital Signs Alert",
-                  desc: "Patient #4092 (Ward A) showing irregular heartbeat.",
-                  color: "bg-red-500",
-                  icon: <Activity size={14} className="text-white" />,
-                },
-                {
-                  time: "09:15 AM",
-                  title: "Lab Results Ready",
-                  desc: "Blood work completed for Jane Doe.",
-                  color: "bg-blue-500",
-                  icon: <FileText size={14} className="text-white" />,
-                },
-                {
-                  time: "08:30 AM",
-                  title: "System Login",
-                  desc: "Successful secure login detected via generalized IP.",
-                  color: "bg-green-500",
-                  icon: <Shield size={14} className="text-white" />,
-                },
-              ].map((item, i) => (
-                <div key={i} className="relative flex gap-4 group">
-                  <div className="flex flex-col items-center h-full">
-                    <div
-                      className={`w-8 h-8 rounded-full ${item.color} flex items-center justify-center shadow-sm z-10 ring-4 ring-white dark:ring-slate-800`}
-                    >
-                      {item.icon}
-                    </div>
-                    {i !== 2 && (
-                      <div className="w-0.5 flex-1 bg-slate-200 dark:bg-slate-700/80 absolute top-8 bottom-0 left-4 -ml-px h-full z-0"></div>
-                    )}
-                  </div>
-                  <div className="pt-1 pb-4">
-                    <p className="mb-1 text-xs font-bold text-slate-400">
-                      {item.time}
-                    </p>
-                    <h4 className="text-base font-bold text-slate-800 dark:text-white">
-                      {item.title}
-                    </h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                      {item.desc}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </WidgetCard>
+          {/* --- ADMIN ONLY: Live Activity Feed (Limit 3) --- */}
+          {role === "Admin" && (
+            <WidgetCard>
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+                <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                  <Clock size={20} className="text-blue-500" /> Live Activity
+                  Feed
+                </h3>
+                <button
+                  onClick={() => navigate("/admin/logs")}
+                  className="text-sm font-medium text-blue-600 hover:underline"
+                >
+                  View All
+                </button>
+              </div>
 
+              <div className="px-2 space-y-6">
+                {activities.length > 0 ? (
+                  activities.map((log, i) => {
+                    const style = getLogStyle(log.action);
+                    return (
+                      <div
+                        key={log._id || i}
+                        className="relative flex gap-4 group"
+                      >
+                        <div className="flex flex-col items-center h-full">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm z-10 ring-4 ring-white dark:ring-slate-800 ${style.color}`}
+                          >
+                            {style.icon}
+                          </div>
+                          {i !== activities.length - 1 && (
+                            <div className="w-0.5 flex-1 bg-slate-200 dark:bg-slate-700/80 absolute top-8 bottom-0 left-4 -ml-px h-full z-0"></div>
+                          )}
+                        </div>
+                        <div className="pt-1 pb-4">
+                          <p className="mb-1 text-xs font-bold text-slate-400">
+                            {new Date(log.timestamp).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                          <h4 className="text-base font-bold text-slate-800 dark:text-white">
+                            {log.action.replace(/_/g, " ")}
+                          </h4>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                              {log.userName}:{" "}
+                            </span>
+                            {log.details}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="py-8 text-center text-slate-500">
+                    <Clock size={32} className="mx-auto mb-2 text-slate-300" />
+                    <p>No recent activity recorded.</p>
+                  </div>
+                )}
+              </div>
+            </WidgetCard>
+          )}
+
+          {/* --- NON-ADMIN: Active Staff List --- */}
           {role !== "Admin" && (
             <WidgetCard>
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
@@ -244,9 +326,10 @@ const DashboardHome = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="col-span-2 py-4 text-center text-slate-500">
-                    No active staff found.
-                  </p>
+                  <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
+                    <Users size={32} className="mb-2 text-slate-300" />
+                    <p>No active staff found currently.</p>
+                  </div>
                 )}
               </div>
             </WidgetCard>
