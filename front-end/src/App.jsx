@@ -19,6 +19,7 @@ import PatientRecords from "./pages/shared/PatientRecords";
 import DoctorList from "./pages/shared/DoctorList";
 import NurseList from "./pages/shared/NurseList";
 import LockedAccounts from "./pages/admin/LockedAccounts";
+import PatientDetails from "./pages/shared/PatientDetails";
 
 // Admin Pages
 import UserManagement from "./pages/admin/UserManagement";
@@ -67,6 +68,7 @@ function App() {
             <Route path="patients" element={<PatientRecords />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="locked" element={<LockedAccounts />} />
+            <Route path="patients/:id" element={<PatientDetails />} />
             <Route
               path="policies"
               element={<Placeholder title="Security Policies" />}
@@ -93,6 +95,7 @@ function App() {
             {/* New Route */}
             <Route path="nurses" element={<NurseList />} />
             <Route path="doctors" element={<DoctorList />} />
+            <Route path="patients/:id" element={<PatientDetails />} />
           </Route>
 
           {/* --- NURSE ROUTES --- */}
@@ -110,6 +113,7 @@ function App() {
             {/* New Route */}
             <Route path="nurses" element={<NurseList />} />
             <Route path="doctors" element={<DoctorList />} />
+            <Route path="patients/:id" element={<PatientDetails />} />
           </Route>
         </Routes>
       </Router>

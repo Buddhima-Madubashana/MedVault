@@ -7,6 +7,7 @@ import {
   X,
   AlertCircle,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Notification from "../../components/Notification";
 import { useAuth } from "../../contexts/AuthContext";
@@ -15,6 +16,7 @@ const PatientRecords = () => {
   const { user, role } = useAuth();
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const navigate = useNavigate();
 
   // --- MODALS STATE ---
   const [isModalOpen, setIsModalOpen] = useState(false); // Add Patient
@@ -268,7 +270,10 @@ const PatientRecords = () => {
                 </div>
               </div>
             </div>
-            <button className="w-full py-2.5 rounded-xl border border-blue-200 text-blue-600 font-medium text-sm hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+            <button
+              onClick={() => navigate(`${patient._id}`)} // Use navigate relative path or absolute `/role/patients/${patient._id}`
+              className="w-full py-2.5 rounded-xl border border-blue-200 text-blue-600 font-medium text-sm hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+            >
               <FileText size={16} /> View Full Record
             </button>
           </div>
