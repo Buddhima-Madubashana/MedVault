@@ -5,76 +5,86 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { logAction } = require("../utils/logger"); // Import Logger
 
-// LOGIN ROUTE (Updated with Lockout Logic)
+// LOGIN ROUTE
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // 1. Check if user exists
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
 
-    // 2. CHECK IF ACCOUNT IS LOCKED (Only for Doctors and Nurses)
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Check Locked Status
     if (user.isLocked && (user.role === "Doctor" || user.role === "Nurse")) {
-      return res.status(403).json({
-        message: "Account Locked: Too many failed attempts. Contact Admin.",
-      });
+      await logAction(
+        user,
+        "LOGIN_BLOCKED",
+        "Attempted login while account locked",
+        req,
+      );
+      return res
+        .status(403)
+        .json({ message: "Account Locked. Contact Admin." });
     }
 
-    // 3. Check password
+    // Check Password
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
-      // --- WRONG PASSWORD LOGIC ---
-      if (user.role === "Doctor" || user.role === "Nurse") {
+      if (user.role !== "Admin") {
         user.failedLoginAttempts += 1;
-
-        // Lock if attempts >= 3
         if (user.failedLoginAttempts >= 3) {
           user.isLocked = true;
           await user.save();
-          return res.status(403).json({
-            message:
-              "Account Locked: You have reached the maximum of 3 attempts.",
-          });
+          await logAction(
+            user,
+            "ACCOUNT_LOCKED",
+            "Account locked due to 3 failed login attempts",
+            req,
+          );
+          return res
+            .status(403)
+            .json({ message: "Account Locked: Max attempts reached." });
         }
-
         await user.save();
-        const attemptsLeft = 3 - user.failedLoginAttempts;
-        return res.status(400).json({
-          message: `Invalid credentials. ${attemptsLeft} attempt(s) left.`,
-        });
+        await logAction(
+          user,
+          "LOGIN_FAILED",
+          `Failed attempt ${user.failedLoginAttempts}/3`,
+          req,
+        );
+        return res
+          .status(400)
+          .json({
+            message: `Invalid credentials. ${3 - user.failedLoginAttempts} attempts left.`,
+          });
       }
-
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // --- SUCCESS LOGIC ---
-
-    // Reset counters on successful login
+    // Reset Lockout Counters
     if (user.failedLoginAttempts > 0) {
       user.failedLoginAttempts = 0;
       user.isLocked = false;
       await user.save();
     }
 
-    // LOG LOGIN
-    await logAction(user, "LOGIN_SUCCESS", "User logged in successfully", req);
+    // --- NEW: SESSION EXPIRY LOGIC ---
+    // Admins get 24h, others get value from .env (e.g., '15m')
+    const expiryTime =
+      user.role === "Admin" ? "24h" : process.env.SESSION_EXPIRY || "1h";
 
-    // Create Token
-    const secret = process.env.JWT_SECRET || "secret";
-    const token = jwt.sign({ id: user._id, role: user.role }, secret, {
-      expiresIn: "1d",
-    });
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET || "secret",
+      { expiresIn: expiryTime },
+    );
+
+    await logAction(user, "LOGIN_SUCCESS", "User logged in successfully", req);
 
     const userInfo = user.toObject();
     delete userInfo.password;
 
     res.json({ token, user: userInfo });
   } catch (err) {
-    console.error("❌ Login Error:", err);
     res.status(500).json({ error: err.message });
   }
 });

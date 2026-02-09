@@ -1,60 +1,105 @@
-// front-end/src/contexts/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
+import { jwtDecode } from "jwt-decode";
 
-const AuthContext = createContext();
-
-export const useAuth = () => useContext(AuthContext);
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // Holds the full user object (including _id)
+  const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [loading, setLoading] = useState(true);
 
-  // Check Local Storage on Load
-  useEffect(() => {
-    const storedUser = localStorage.getItem("medvault_user");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      setRole(parsedUser.role);
-    }
-  }, []);
+  // Helper to safely check token validity
+  const checkTokenExpiration = (token) => {
+    // 1. Safety Check: Must be a string
+    if (!token || typeof token !== "string") return null;
 
-  const login = async (email, password) => {
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      // 2. Decode
+      const decoded = jwtDecode(token);
+      if (!decoded || !decoded.exp) return null;
 
-      const data = await response.json();
+      const currentTime = Date.now() / 1000;
 
-      if (response.ok) {
-        // Save to state and local storage
-        setRole(data.user.role);
-        setUser(data.user);
-        localStorage.setItem("medvault_token", data.token);
-        localStorage.setItem("medvault_user", JSON.stringify(data.user));
-        return { success: true };
+      if (decoded.exp < currentTime) {
+        // Token expired
+        console.warn("Token expired, logging out.");
+        logout();
       } else {
-        return { success: false, message: data.message };
+        // Token valid, set auto-logout timer
+        const timeLeft = (decoded.exp - currentTime) * 1000;
+
+        // Cap max timeout to avoid integer overflow (approx 24 days)
+        const safeTimeLeft = Math.min(timeLeft, 2147483647);
+
+        console.log(
+          `Session valid. Expires in ${(safeTimeLeft / 1000 / 60).toFixed(1)} mins`,
+        );
+
+        const timer = setTimeout(() => {
+          alert("Session expired. Please log in again.");
+          logout();
+        }, safeTimeLeft);
+
+        return timer;
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      return { success: false, message: "Server error" };
+    } catch (err) {
+      // 3. Catch invalid token errors (garbage data)
+      console.error("Invalid Token Data:", err.message);
+      logout(); // Clear bad data immediately
     }
+    return null;
+  };
+
+  useEffect(() => {
+    let timer;
+    if (token) {
+      try {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser && storedUser !== "undefined") {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setRole(parsedUser.role);
+        }
+        // Initialize Timer
+        timer = checkTokenExpiration(token);
+      } catch (e) {
+        console.error("Error restoring session:", e);
+        logout();
+      }
+    }
+    setLoading(false);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [token]);
+
+  const login = (userData, authToken) => {
+    if (!authToken || typeof authToken !== "string") {
+      console.error("Login failed: Invalid token received", authToken);
+      return;
+    }
+    setUser(userData);
+    setRole(userData.role);
+    setToken(authToken);
+    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("token", authToken);
   };
 
   const logout = () => {
-    setRole(null);
     setUser(null);
-    localStorage.removeItem("medvault_token");
-    localStorage.removeItem("medvault_user");
+    setRole(null);
+    setToken(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, login, logout }}>
-      {children}
+    <AuthContext.Provider value={{ user, role, token, login, logout, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);

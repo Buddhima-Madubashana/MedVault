@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext"; // Ensure path matches your structure
 import { useNavigate } from "react-router-dom";
 
+// --- ICONS (Original UI) ---
 const UserIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -59,7 +60,8 @@ const EyeOffIcon = () => (
   </svg>
 );
 
-export default function Login({ onSwitchToSignup, onSwitchToForgetPassword }) {
+// --- MAIN COMPONENT ---
+function Login({ onSwitchToSignup, onSwitchToForgetPassword }) {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -81,13 +83,36 @@ export default function Login({ onSwitchToSignup, onSwitchToForgetPassword }) {
     setError("");
     setLoading(true);
 
-    // Pass BOTH email and password
-    const result = await login(email, password);
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // FIX: Explicitly send email and password (fixes 'formData is not defined')
+        body: JSON.stringify({ email, password }),
+      });
 
-    setLoading(false);
+      const data = await response.json();
 
-    if (!result.success) {
-      setError(result.message || "Failed to log in");
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      // --- SUCCESS CHECK ---
+      if (data.token && data.user) {
+        login(data.user, data.token); // Call AuthContext login
+
+        // Navigate based on role
+        if (data.user.role === "Admin") navigate("/admin");
+        else if (data.user.role === "Doctor") navigate("/doctor");
+        else if (data.user.role === "Nurse") navigate("/nurse");
+      } else {
+        throw new Error("Invalid response from server: Token missing.");
+      }
+    } catch (err) {
+      console.error("Login Error:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -168,27 +193,10 @@ export default function Login({ onSwitchToSignup, onSwitchToForgetPassword }) {
             {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>
-
-        {/* <div className="space-y-2 text-center">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Don&apos;t have an account?{" "}
-            <a
-              onClick={onSwitchToSignup}
-              href="#"
-              className="font-medium underline transition-colors text-zinc-900 dark:text-zinc-50 hover:text-zinc-700 dark:hover:text-zinc-300"
-            >
-              Sign up
-            </a>
-          </p>
-          <a
-            onClick={onSwitchToForgetPassword}
-            href="#"
-            className="text-sm font-medium underline transition-colors text-zinc-900 dark:text-zinc-50 hover:text-zinc-700 dark:hover:text-zinc-300"
-          >
-            Forgot your password?
-          </a>
-        </div> */}
       </div>
     </div>
   );
 }
+
+// --- FIX: EXPORT DEFAULT STATEMENT ---
+export default Login;
