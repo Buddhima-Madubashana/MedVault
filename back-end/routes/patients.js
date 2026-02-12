@@ -3,12 +3,16 @@ const router = express.Router();
 const Patient = require("../models/Patient");
 const User = require("../models/User"); // Need User model to find actor name
 const { logAction } = require("../utils/logger");
+const authMiddleware = require("../middleware/authMiddleware");
+const maskData = require("../utils/maskData");
 
 // GET Patients
-router.get("/", async (req, res) => {
+router.get("/", authMiddleware, async (req, res) => {
   try {
     const patients = await Patient.find();
-    res.json(patients);
+    // Apply Role-Based Masking
+    const maskedData = maskData(patients, req.user.role);
+    res.json(maskedData);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Trash2,
   Search,
@@ -6,13 +7,15 @@ import {
   Stethoscope,
   Activity,
   Users,
+  Eye,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import Notification from "../../components/Notification";
 import { useAuth } from "../../contexts/AuthContext";
 
 const AllUsers = () => {
-  const { user } = useAuth(); // Admin user
+  const { user, token } = useAuth(); // Admin user
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Doctors"); // 'Doctors' | 'Nurses' | 'Patients'
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,16 +39,26 @@ const AllUsers = () => {
     else if (activeTab === "Patients")
       url = "http://localhost:5000/api/patients";
 
-    fetch(url)
-      .then((res) => res.json())
+    const options = {};
+    if (activeTab === "Patients") {
+      if (!token) return;
+      options.headers = { Authorization: `Bearer ${token}` };
+    }
+
+    fetch(url, options)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      })
       .then((data) => setData(data))
       .catch((err) => console.error(err));
   };
 
   useEffect(() => {
+    if (activeTab === "Patients" && !token) return;
     fetchData();
     setSearchTerm(""); // Reset search on tab switch
-  }, [activeTab]);
+  }, [activeTab, token]);
 
   // --- DELETE HANDLER ---
   const initiateDelete = (item) => {
@@ -207,6 +220,15 @@ const AllUsers = () => {
                       <span className="font-medium truncate text-slate-700 dark:text-slate-300">
                         {item.disease}
                       </span>
+                    </div>
+                    {/* View Private Details Button */}
+                    <div className="col-span-2 pt-2">
+                      <button
+                        onClick={() => navigate(`/admin/patients/${item._id}`)}
+                        className="flex items-center justify-center w-full gap-2 px-4 py-2 text-sm font-bold text-blue-600 transition-colors bg-blue-50 hover:bg-blue-100 rounded-xl dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30"
+                      >
+                        <Eye size={16} /> View Encrypted Details
+                      </button>
                     </div>
                   </>
                 ) : (

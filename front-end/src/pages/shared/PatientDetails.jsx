@@ -3,25 +3,34 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   User,
+  Heart,
   Activity,
-  Calendar,
   FileText,
   Shield,
   Clock,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 const PatientDetails = () => {
   const { id } = useParams();
+  const { token } = useAuth();
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!token) return;
+
     // Fetch single patient details
     // Note: You might need to add a backend route for GET /api/patients/:id if it doesn't exist
     // For now, we'll fetch all and find one, or you can implement the specific route.
-    fetch(`http://localhost:5000/api/patients`)
-      .then((res) => res.json())
+    fetch(`http://localhost:5000/api/patients`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      })
       .then((data) => {
         const found = data.find((p) => p._id === id);
         setPatient(found);
@@ -31,7 +40,7 @@ const PatientDetails = () => {
         console.error(err);
         setLoading(false);
       });
-  }, [id]);
+  }, [id, token]);
 
   if (loading)
     return (

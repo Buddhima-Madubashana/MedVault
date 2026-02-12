@@ -13,7 +13,7 @@ import Notification from "../../components/Notification";
 import { useAuth } from "../../contexts/AuthContext";
 
 const PatientRecords = () => {
-  const { user, role } = useAuth();
+  const { user, role, token } = useAuth();
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const navigate = useNavigate();
@@ -61,8 +61,15 @@ const PatientRecords = () => {
 
   // --- 1. FETCH DATA ---
   const fetchData = () => {
-    fetch("http://localhost:5000/api/patients")
-      .then((res) => res.json())
+    if (!token) return;
+
+    fetch("http://localhost:5000/api/patients", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch");
+        return res.json();
+      })
       .then((data) => setPatients(data))
       .catch((err) => console.error(err));
 
@@ -75,8 +82,8 @@ const PatientRecords = () => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, [user, role]);
+    if (token) fetchData();
+  }, [user, role, token]);
 
   const showNotification = (type, title, msg) =>
     setNotification({ type, title, message: msg, duration: 3000 });
