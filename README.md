@@ -13,7 +13,8 @@ This project serves as both a functional prototype and an educational platform f
 ### **🔐 Advanced Security Controls**
 - **Context-Aware Access Control (CAAC):** Dynamic permissions based on time, location, and device context
 - **Role-Based Access Control (RBAC):** Four distinct user roles (Patient, Nurse, Doctor, Administrator)
-- **AES-256 Encryption:** Field-level encryption for sensitive medical data
+- **AES-256 Encryption:** Field-level encryption for sensitive patient data (Age, Condition, Contact Info)
+- **Granular Data Masking:** Role-specific data visibility (Admins see all, Doctors see medical, Nurses see basic info)
 - **Comprehensive Audit Logging:** Immutable logs with full context capture
 
 ### **🎓 Educational Demonstrations**
@@ -107,17 +108,18 @@ This project serves as both a functional prototype and an educational platform f
 ## **👥 User Roles & Access**
 
 ### **Nurse**
-- View basic patient information
-- Context-restricted access (e.g., limited after-hours)
-- Emergency patient management capabilities
+- View basic patient identification (Name, Ward, Age)
+- **Privacy Control:** Sensitive medical & contact details are masked (`****`)
+- Emergency patient management capabilities (Requests)
 
 ### **Doctor**
-- Complete patient record access
+- View patient medical records (Condition, Ward, Age)
+- **Privacy Control:** Personal contact information is masked (`****`)
 - Context-aware restrictions for external access
-- Break-glass emergency override
 
 ### **Administrator**
-- Full system configuration access
+- Full access to decrypted patient details (via "View Encrypted Details")
+- User management (Doctors, Nurses, Patients)
 - Security policy management
 - Audit log review and analysis
 - Demonstration mode control
@@ -126,26 +128,25 @@ This project serves as both a functional prototype and an educational platform f
 
 ```
 medvault/
-├── backend/
-│   ├── src/
-│   │   ├── controllers/     # Request handlers
-│   │   ├── middleware/      # Security & context middleware
-│   │   ├── models/         # MongoDB schemas
-│   │   ├── routes/         # API routes
-│   │   ├── services/       # Business logic
-│   │   ├── utils/          # Helper functions
-│   │   └── config/         # Configuration files
-│   ├── .env.example        # Environment template
+├── back-end/
+│   ├── index.js           # Entry point
+│   ├── middleware/        # Security, Auth, & Context middleware
+│   ├── models/            # MongoDB schemas (Patient, User, etc.)
+│   ├── routes/            # API routes
+│   ├── utils/             # Helpers (Encryption, Logging, Masking)
+│   ├── .env               # Environment variables
 │   └── package.json
 │
-├── frontend/
+├── front-end/
 │   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── contexts/       # React contexts
-│   │   ├── pages/         # Page components
-│   │   ├── services/      # API services
-│   │   ├── styles/        # CSS modules
-│   │   └── utils/         # Frontend utilities
+│   │   ├── components/    # Reusable UI (Forms, Modals, etc.)
+│   │   ├── contexts/      # AuthContext & Global State
+│   │   ├── pages/         # Application Views (Admin, Doctor, Nurse)
+│   │   │   ├── admin/     # Admin-specific pages
+│   │   │   ├── doctor/    # Doctor-specific pages
+│   │   │   ├── nurse/     # Nurse-specific pages
+│   │   │   └── shared/    # Common views (Patient Details)
+│   │   └── App.jsx        # Main Component & Routing
 │   └── package.json
 │
 ├── docs/                  # Documentation
