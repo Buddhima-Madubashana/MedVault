@@ -25,6 +25,7 @@ import PatientDetails from "./pages/shared/PatientDetails";
 import UserManagement from "./pages/admin/UserManagement";
 import AuditLogs from "./pages/admin/AuditLogs";
 import AllUsers from "./pages/admin/AllUsers";
+import SystemSettings from "./pages/admin/SystemSettings";
 
 // New Approval Pages
 import PendingApprovals from "./pages/nurse/PendingApprovals";
@@ -76,7 +77,7 @@ function App() {
             <Route path="logs" element={<Placeholder title="Audit Logs" />} />
             <Route
               path="settings"
-              element={<Placeholder title="System Settings" />}
+              element={<SystemSettings />}
             />
           </Route>
 

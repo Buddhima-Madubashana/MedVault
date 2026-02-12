@@ -8,6 +8,7 @@ const userRoutes = require("./routes/users");
 const patientRoutes = require("./routes/patients");
 const patientRequestRoutes = require("./routes/patientRequests");
 const auditLogRoutes = require("./routes/auditLogs");
+const systemSettingsRoutes = require("./routes/systemSettings");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,6 +29,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/patients", patientRoutes);
 app.use("/api/patient-requests", patientRequestRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
+app.use("/api/settings", systemSettingsRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
