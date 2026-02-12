@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { encrypt, decrypt } = require("../utils/encryption");
 
 const patientRequestSchema = new mongoose.Schema(
   {
@@ -6,16 +7,16 @@ const patientRequestSchema = new mongoose.Schema(
     patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient" }, // NEW (For delete requests)
 
     name: { type: String }, // Optional for delete
-    age: { type: Number },
-    disease: { type: String },
-    ward: { type: String },
+    age: { type: String, set: encrypt, get: decrypt },
+    disease: { type: String, set: encrypt, get: decrypt },
+    ward: { type: String, set: encrypt, get: decrypt },
     imageUrl: { type: String },
 
     // Contact Info
-    email: { type: String },
-    phone: { type: String },
-    address: { type: String },
-    guardianName: { type: String },
+    email: { type: String, set: encrypt, get: decrypt },
+    phone: { type: String, set: encrypt, get: decrypt },
+    address: { type: String, set: encrypt, get: decrypt },
+    guardianName: { type: String, set: encrypt, get: decrypt },
 
     nurseId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -33,7 +34,11 @@ const patientRequestSchema = new mongoose.Schema(
       default: "Pending",
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true },
+  },
 );
 
 module.exports = mongoose.model("PatientRequest", patientRequestSchema);
