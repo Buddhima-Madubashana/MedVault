@@ -148,6 +148,46 @@ const PatientDetails = () => {
               </div>
             </div>
           </div>
+
+          <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
+            <h3 className="flex items-center gap-2 mb-4 text-lg font-bold text-slate-900 dark:text-white">
+              <User className="text-blue-500" size={20} /> Contact Info
+            </h3>
+            <div className="space-y-4">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                <span className="block text-xs font-bold uppercase text-slate-400">
+                  Guardian
+                </span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {patient.guardianName || "N/A"}
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                <span className="block text-xs font-bold uppercase text-slate-400">
+                  Phone
+                </span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {patient.phone || "N/A"}
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                <span className="block text-xs font-bold uppercase text-slate-400">
+                  Email
+                </span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white break-all">
+                  {patient.email || "N/A"}
+                </span>
+              </div>
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                <span className="block text-xs font-bold uppercase text-slate-400">
+                  Address
+                </span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {patient.address || "N/A"}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Column: History & Notes */}

@@ -7,6 +7,13 @@ const patientSchema = new mongoose.Schema(
     disease: { type: String, required: true },
     ward: { type: String, required: true },
     imageUrl: { type: String },
+    
+    // Contact Info
+    email: { type: String },
+    phone: { type: String },
+    address: { type: String },
+    guardianName: { type: String },
+
     // Track who authorized this patient (so we know who to ask for deletion)
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },

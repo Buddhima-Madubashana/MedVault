@@ -78,6 +78,10 @@ router.post("/:id/approve", async (req, res) => {
         disease: request.disease,
         ward: request.ward,
         imageUrl: request.imageUrl,
+        email: request.email,
+        phone: request.phone,
+        address: request.address,
+        guardianName: request.guardianName,
         approvedBy: request.doctorId,
       });
       await newPatient.save();

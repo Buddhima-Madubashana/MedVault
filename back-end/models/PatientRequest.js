@@ -11,6 +11,12 @@ const patientRequestSchema = new mongoose.Schema(
     ward: { type: String },
     imageUrl: { type: String },
 
+    // Contact Info
+    email: { type: String },
+    phone: { type: String },
+    address: { type: String },
+    guardianName: { type: String },
+
     nurseId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
