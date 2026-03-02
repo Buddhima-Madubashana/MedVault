@@ -55,13 +55,39 @@ export const AuthProvider = ({ children }) => {
     let timer;
     if (token) {
       try {
+        // 1. Initial Load from LocalStorage
         const storedUser = localStorage.getItem("user");
         if (storedUser && storedUser !== "undefined") {
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
           setRole(parsedUser.role);
         }
-        // Initialize Timer
+
+        // 2. Fetch Fresh Profile (to handle Temp Admin status)
+        fetch(`http://localhost:5000/api/users/${jwtDecode(token).id}`, {
+             headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(updatedUser => {
+           if (updatedUser && updatedUser._id) {
+               setUser(updatedUser);
+               // Promote role if Temp Admin
+               if (updatedUser.role === "Doctor" && updatedUser.isTempAdmin && updatedUser.tempAdminExpiresAt) {
+                   const expiry = new Date(updatedUser.tempAdminExpiresAt).getTime();
+                   if (expiry > Date.now()) {
+                       setRole("Admin"); // PROMOTE TO ADMIN
+                       // Update LocalStorage to persist across refreshes (optional but good for UX)
+                       localStorage.setItem("user", JSON.stringify({...updatedUser, role: "Admin"}));
+                   }
+               } else {
+                   setRole(updatedUser.role);
+                   localStorage.setItem("user", JSON.stringify(updatedUser)); // Sync DB changes
+               }
+           }
+        })
+        .catch(err => console.error("Failed to refresh profile:", err));
+
+        // 3. Initialize Timer
         timer = checkTokenExpiration(token);
       } catch (e) {
         console.error("Error restoring session:", e);

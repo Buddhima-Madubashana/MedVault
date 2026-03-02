@@ -11,7 +11,7 @@ router.get("/", authMiddleware, async (req, res) => {
   try {
     const patients = await Patient.find();
     // Apply Role-Based Masking
-    const maskedData = maskData(patients, req.user.role);
+    const maskedData = maskData(patients, req.user);
     res.json(maskedData);
   } catch (err) {
     res.status(500).json({ error: err.message });

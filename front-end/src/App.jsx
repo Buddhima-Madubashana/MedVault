@@ -6,6 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ToastProvider } from "./contexts/ToastContext";
 import LandingPage from "./pages/Landing";
 
 // Dashboards
@@ -25,6 +26,7 @@ import PatientDetails from "./pages/shared/PatientDetails";
 import UserManagement from "./pages/admin/UserManagement";
 import AuditLogs from "./pages/admin/AuditLogs";
 import AllUsers from "./pages/admin/AllUsers";
+import AdminRequests from "./pages/admin/AdminRequests";
 import SystemSettings from "./pages/admin/SystemSettings";
 
 // New Approval Pages
@@ -49,8 +51,9 @@ const ProtectedRoute = ({ children, allowedRole }) => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
+      <ToastProvider>
+        <Router>
+          <Routes>
           <Route path="/" element={<LandingPage />} />
 
           {/* --- ADMIN ROUTES --- */}
@@ -79,6 +82,7 @@ function App() {
               path="settings"
               element={<SystemSettings />}
             />
+            <Route path="requests" element={<AdminRequests />} />
           </Route>
 
           {/* --- DOCTOR ROUTES --- */}
@@ -118,6 +122,7 @@ function App() {
           </Route>
         </Routes>
       </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }

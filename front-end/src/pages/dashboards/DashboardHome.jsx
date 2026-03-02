@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../../contexts/ToastContext";
+import AdminRequestModal from "../../components/AdminRequestModal"; // Import Modal
 import {
   Clock,
   Activity,
@@ -9,6 +11,7 @@ import {
   CheckCircle,
   UserPlus,
   AlertTriangle,
+  Lock,
 } from "lucide-react";
 
 // Greeting Logic
@@ -29,12 +32,92 @@ const WidgetCard = ({ children, className = "" }) => (
 );
 
 const DashboardHome = () => {
-  const { user, role } = useAuth();
+  const { user, role, token } = useAuth(); // Need token for requests
   const navigate = useNavigate();
   const greeting = getGreeting();
 
   const [staffList, setStaffList] = useState([]);
   const [activities, setActivities] = useState([]);
+  
+  // Admin Request State
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [admins, setAdmins] = useState([]);
+  const [requestStatus, setRequestStatus] = useState("None"); // None, Pending, Approved
+  const [timeLeft, setTimeLeft] = useState(null);
+  const [currentUser, setCurrentUser] = useState(user); // Fresh user data
+  const { success, error } = useToast();
+
+  // 0. Fetch Fresh User Data (for Permission Status)
+  const refreshUser = async () => {
+    if (!user) return;
+    // Refresh if Doctor OR if user has Temp Admin flag (even if promoted to Admin role)
+    // if (role !== "Doctor" && !user.isTempAdmin) return;
+    
+    try {
+      const res = await fetch(`http://localhost:5000/api/users/${user._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setCurrentUser(data);
+      
+      // Check for active admin permission
+      if (data.isTempAdmin && data.tempAdminExpiresAt) {
+        const expiry = new Date(data.tempAdminExpiresAt).getTime();
+        const now = Date.now();
+        if (expiry > now) {
+          setRequestStatus("Approved");
+          setTimeLeft(expiry - now);
+        } else {
+          setRequestStatus("Expired");
+          // Optionally reload page to revert role if AuthContext doesn't catch it immediately
+        }
+      } else {
+        // ... pending logic ...
+        const reqRes = await fetch(`http://localhost:5000/api/admin-requests`, {
+           headers: { Authorization: `Bearer ${token}` },
+        });
+        const reqData = await reqRes.json();
+        const pending = reqData.find(r => r.status === "Pending");
+        if (pending) setRequestStatus("Pending");
+        else setRequestStatus("None");
+      }
+    } catch (err) {
+      console.error("Failed to refresh user:", err);
+    }
+  };
+
+  useEffect(() => {
+    refreshUser();
+    // Poll every minute to update countdown/status?
+    const interval = setInterval(refreshUser, 60000);
+    return () => clearInterval(interval);
+  }, [user, token]);
+
+  // Countdown Helper
+  useEffect(() => {
+    if (timeLeft === null || timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1000) {
+          clearInterval(timer);
+          refreshUser(); // Refresh when time is up
+          return 0;
+        }
+        return prev - 1000;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  // Format Time Left
+  const formatTimeKey = (ms) => {
+    if (!ms) return "00:00:00";
+    const totalSeconds = Math.floor(ms / 1000);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
 
   // 1. Fetch Staff (Only for Doctors/Nurses)
   useEffect(() => {
@@ -47,15 +130,52 @@ const DashboardHome = () => {
     }
   }, [role]);
 
+  // 1.5 Fetch Admins (Only for Doctor Request)
+  useEffect(() => {
+    if (role === "Doctor") {
+       fetch(`http://localhost:5000/api/users?role=Admin`) // Assuming endpoint supports filtering
+        .then((res) => res.json())
+        .then((data) => setAdmins(data))
+        .catch((err) => console.error(err));
+    }
+  }, [role]);
+
   // 2. Fetch Live Activity (Only for Admin, Limit 3)
   useEffect(() => {
-    if (role === "Admin") {
-      fetch("http://localhost:5000/api/audit-logs?limit=3")
+    if (role === "Admin" || (currentUser && currentUser.isTempAdmin)) { // Temp Admin gets to see logs too?
+      fetch("http://localhost:5000/api/audit-logs?limit=3", {
+         headers: { Authorization: `Bearer ${token}` }, // Add auth for logs
+      })
         .then((res) => res.json())
         .then((data) => setActivities(data))
         .catch((err) => console.error("Failed to load activity feed:", err));
     }
-  }, [role]);
+  }, [role, currentUser, token]);
+
+  // Handle Request Submit
+  const handleRequestSubmit = async (data) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/admin-requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        setIsRequestModalOpen(false);
+        success("Request sent successfully!");
+        refreshUser();
+      } else {
+        const err = await res.json();
+        error(`Error: ${err.error}`);
+      }
+    } catch (err) {
+      console.error(err);
+      error("Failed to send request.");
+    }
+  };
 
   // Helper to choose icon/color for log actions
   const getLogStyle = (action) => {
@@ -109,18 +229,58 @@ const DashboardHome = () => {
             </h1>
             <p className="max-w-xl text-lg text-blue-100 opacity-90">
               {role === "Admin"
-                ? "System status is stable. Review the latest security events below."
-                : "Welcome to your secure dashboard. Check your schedule and patient lists."}
+                ? (user.isTempAdmin && timeLeft > 0
+                    ? `TEMPORARY ADMIN ACTIVE. Time Remaining: ${formatTimeKey(timeLeft)}` 
+                    : "System status is stable. Review the latest security events below.")
+                : requestStatus === "Approved" 
+                  ? `You have TEMPORARY ADMIN ACCESS. Time remaining: ${formatTimeKey(timeLeft)}` 
+                  : "Welcome to your secure dashboard. Identify requested permissions below."}
             </p>
           </div>
           <div className="flex gap-3">
-            <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl font-medium transition-all border border-white/10">
-              View Schedule
-            </button>
-            {role !== "Admin" && (
-              <button className="px-5 py-2.5 bg-white text-blue-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">
-                Start Rounds
-              </button>
+            {role === "Doctor" ? (
+              requestStatus === "Approved" ? (
+                 <div className="flex items-center gap-2 px-5 py-2.5 bg-red-500/20 border border-red-200/50 rounded-xl">
+                   <Shield className="animate-pulse text-red-100" />
+                   <span className="font-bold text-red-50">Admin Mode Active</span>
+                 </div>
+              ) : requestStatus === "Pending" ? (
+                 <button disabled className="px-5 py-2.5 bg-yellow-500/50 text-white rounded-xl font-bold cursor-not-allowed border border-white/10">
+                   Request Pending...
+                 </button>
+              ) : (
+                <button 
+                  onClick={() => setIsRequestModalOpen(true)}
+                  className="px-5 py-2.5 bg-white text-blue-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                >
+                  <Lock size={18} /> Request Admin Permission
+                </button>
+              )
+            ) : role === "Nurse" ? (
+               // Keep existing buttons for Nurse
+               <>
+                 <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl font-medium transition-all border border-white/10">
+                   View Schedule
+                 </button>
+                 <button className="px-5 py-2.5 bg-white text-blue-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">
+                   Start Rounds
+                 </button>
+               </>
+            ) : (
+               // Admin Buttons (View Schedule?)
+               <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl font-medium transition-all border border-white/10">
+                  View Schedule
+               </button>
+            )}
+            
+            {/* Modal */}
+            {isRequestModalOpen && (
+               <AdminRequestModal 
+                 isOpen={isRequestModalOpen} 
+                 onClose={() => setIsRequestModalOpen(false)}
+                 admins={admins}
+                 onSubmit={handleRequestSubmit}
+               />
             )}
           </div>
         </div>

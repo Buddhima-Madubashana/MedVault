@@ -13,6 +13,10 @@ const userSchema = new mongoose.Schema(
     imageUrl: { type: String },
     specialty: { type: String },
     ward: { type: String },
+    
+    // Temporary Admin Permissions
+    isTempAdmin: { type: Boolean, default: false },
+    tempAdminExpiresAt: { type: Date },
 
     failedLoginAttempts: { type: Number, default: 0 },
     isLocked: { type: Boolean, default: false },
