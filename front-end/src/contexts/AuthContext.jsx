@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
                    const expiry = new Date(updatedUser.tempAdminExpiresAt).getTime();
                    if (expiry > Date.now()) {
                        setRole("Admin"); // PROMOTE TO ADMIN
-                       // Update LocalStorage to persist across refreshes (optional but good for UX)
+                       // Update LocalStorage to persist across refreshes
                        localStorage.setItem("user", JSON.stringify({...updatedUser, role: "Admin"}));
                    }
                } else {

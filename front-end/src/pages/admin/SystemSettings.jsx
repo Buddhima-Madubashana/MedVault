@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Shield, Clock, AlertTriangle, Save, Lock } from "lucide-react";
+import {
+  Shield,
+  Clock,
+  AlertTriangle,
+  Save,
+  Users,
+  CheckCircle,
+  RefreshCw,
+} from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Notification from "../../components/Notification";
 
 const SystemSettings = () => {
@@ -12,20 +19,38 @@ const SystemSettings = () => {
     requireSpecialChars: true,
     sessionTimeout: 15,
     maxLoginAttempts: 3,
-    accountLockoutDuration: 30, // minutes
+    accountLockoutDuration: 30,
   });
 
   const [notification, setNotification] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [compliance, setCompliance] = useState(null); // { pendingCount, totalNonAdmin }
+  const [saveResult, setSaveResult] = useState(null); // { flaggedCount, message }
 
   // Fetch Current Settings
   useEffect(() => {
     fetch("http://localhost:5000/api/settings")
       .then((res) => res.json())
       .then((data) => {
-        if(data._id) setPolicies(data);
+        if (data._id) setPolicies(data);
       })
       .catch((err) => console.error("Failed to load settings", err));
   }, []);
+
+  // Fetch compliance status
+  const fetchCompliance = () => {
+    if (!token) return;
+    fetch("http://localhost:5000/api/settings/compliance", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setCompliance(data))
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchCompliance();
+  }, [token]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -37,6 +62,8 @@ const SystemSettings = () => {
 
   const handleSave = async () => {
     if (!token) return;
+    setSaving(true);
+    setSaveResult(null);
 
     try {
       const res = await fetch("http://localhost:5000/api/settings", {
@@ -48,21 +75,30 @@ const SystemSettings = () => {
         body: JSON.stringify({ ...policies, actionBy: user._id }),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
+        setSaveResult(data);
         setNotification({
           type: "success",
-          title: "Saved",
-          message: "Global security policies updated successfully.",
+          title: "Settings Saved",
+          message: data.message || "Global security policies updated.",
+          duration: 4000,
         });
+        // Refresh compliance summary
+        fetchCompliance();
       } else {
-        throw new Error("Update failed");
+        throw new Error(data.error || "Update failed");
       }
     } catch (err) {
       setNotification({
         type: "error",
         title: "Error",
         message: "Failed to update settings.",
+        duration: 3000,
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -78,6 +114,51 @@ const SystemSettings = () => {
         </p>
       </div>
 
+      {/* Compliance Status Banner */}
+      {compliance && compliance.pendingCount > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-start gap-4 p-5 border border-orange-200 rounded-2xl bg-orange-50 dark:bg-orange-900/10 dark:border-orange-800"
+        >
+          <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl shrink-0">
+            <Users className="text-orange-600 dark:text-orange-400" size={22} />
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-orange-800 dark:text-orange-300">
+              Password Reset Required
+            </p>
+            <p className="text-sm text-orange-700 dark:text-orange-400 mt-0.5">
+              <strong>{compliance.pendingCount}</strong> of{" "}
+              {compliance.totalNonAdmin} users need to reset their password to
+              comply with the current policy. They will be prompted on their
+              next login.
+            </p>
+          </div>
+          <button
+            onClick={fetchCompliance}
+            className="p-2 text-orange-500 hover:text-orange-700 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw size={16} />
+          </button>
+        </motion.div>
+      )}
+
+      {/* All compliant banner */}
+      {compliance && compliance.pendingCount === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 p-4 border border-green-200 rounded-2xl bg-green-50 dark:bg-green-900/10 dark:border-green-800"
+        >
+          <CheckCircle className="text-green-600 dark:text-green-400 shrink-0" size={20} />
+          <p className="text-sm font-medium text-green-700 dark:text-green-300">
+            All {compliance.totalNonAdmin} users comply with the current password policy.
+          </p>
+        </motion.div>
+      )}
+
       <div className="grid grid-cols-1 gap-6">
         {/* Password Policy Card */}
         <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
@@ -90,7 +171,9 @@ const SystemSettings = () => {
                 Password Policy
               </h2>
               <p className="text-sm text-slate-500">
-                Enforce strength requirements for user accounts.
+                Enforce strength requirements for user accounts. Applies to{" "}
+                <strong>new registrations</strong> and flags existing users to
+                reset when policy is tightened.
               </p>
             </div>
           </div>
@@ -109,18 +192,28 @@ const SystemSettings = () => {
                 max="32"
                 className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
               />
+              <p className="text-xs text-slate-400">
+                Current: {policies.minPasswordLength} characters minimum
+              </p>
             </div>
 
-            <div className="flex items-center gap-3 pt-6">
+            <div className="flex items-start gap-3 pt-6">
               <input
                 type="checkbox"
+                id="requireSpecialChars"
                 name="requireSpecialChars"
                 checked={policies.requireSpecialChars}
                 onChange={handleChange}
-                className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-5 h-5 mt-0.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Require Special Characters (!@#$)
+              <label
+                htmlFor="requireSpecialChars"
+                className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
+              >
+                Require Special Characters
+                <span className="block text-xs text-slate-400 font-normal mt-0.5">
+                  e.g. !@#$%^&*
+                </span>
               </label>
             </div>
           </div>
@@ -134,10 +227,11 @@ const SystemSettings = () => {
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Session & Access Control
+                Session &amp; Access Control
               </h2>
               <p className="text-sm text-slate-500">
-                Manage automated timeouts and lockout rules.
+                Manage automated timeouts and lockout rules. Applied to all
+                users on next login.
               </p>
             </div>
           </div>
@@ -145,7 +239,7 @@ const SystemSettings = () => {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="space-y-2">
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
-                Session Timeout (Minutes)
+                Session Timeout
               </label>
               <input
                 type="number"
@@ -155,6 +249,7 @@ const SystemSettings = () => {
                 min="1"
                 className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
               />
+              <p className="text-xs text-slate-400">{policies.sessionTimeout} minutes</p>
             </div>
 
             <div className="space-y-2">
@@ -170,11 +265,14 @@ const SystemSettings = () => {
                 max="10"
                 className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
               />
+              <p className="text-xs text-slate-400">
+                Account locks after {policies.maxLoginAttempts} failures
+              </p>
             </div>
 
             <div className="space-y-2">
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
-                Lockout Duration (Minutes)
+                Lockout Duration
               </label>
               <input
                 type="number"
@@ -184,9 +282,34 @@ const SystemSettings = () => {
                 min="5"
                 className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
               />
+              <p className="text-xs text-slate-400">{policies.accountLockoutDuration} minutes</p>
             </div>
           </div>
         </div>
+
+        {/* Save Result Banner */}
+        <AnimatePresence>
+          {saveResult && saveResult.policyTightened && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex items-start gap-4 p-5 border border-blue-200 rounded-2xl bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800"
+            >
+              <Users className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" size={20} />
+              <div>
+                <p className="font-bold text-blue-800 dark:text-blue-300">
+                  Policy Applied to Existing Users
+                </p>
+                <p className="text-sm text-blue-700 dark:text-blue-400 mt-0.5">
+                  {saveResult.flaggedCount} existing user(s) have been flagged
+                  to reset their password on next login to comply with the new
+                  password policy.
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Warning Banner */}
         <div className="p-4 border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/10 dark:border-yellow-600 rounded-r-xl">
@@ -194,22 +317,37 @@ const SystemSettings = () => {
             <AlertTriangle className="shrink-0 text-yellow-600 dark:text-yellow-500" />
             <div>
               <p className="font-bold text-yellow-800 dark:text-yellow-400">
-                Change Impact Warning
+                Change Impact
               </p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                Updating these policies will affect all users immediately. Active sessions may be terminated if they exceed new timeout limits.
-              </p>
+              <ul className="text-sm text-yellow-700 dark:text-yellow-300 mt-1 space-y-1 list-disc list-inside">
+                <li>
+                  <strong>Password policy</strong> — enforced immediately for
+                  new accounts. Existing users are flagged to reset if policy is
+                  tightened.
+                </li>
+                <li>
+                  <strong>Session timeout &amp; max attempts</strong> — applied
+                  to all users on next login.
+                </li>
+                <li>Active sessions may be terminated if they exceed new timeout limits.</li>
+              </ul>
             </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-2">
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 px-8 py-3 font-bold text-white transition-all bg-blue-600 shadow-lg hover:bg-blue-700 rounded-xl shadow-blue-500/30"
+            disabled={saving}
+            className="flex items-center gap-2 px-8 py-3 font-bold text-white transition-all bg-blue-600 shadow-lg hover:bg-blue-700 rounded-xl shadow-blue-500/30 disabled:opacity-60"
           >
-            <Save size={20} /> Save Configuration
+            {saving ? (
+              <RefreshCw size={20} className="animate-spin" />
+            ) : (
+              <Save size={20} />
+            )}
+            {saving ? "Saving..." : "Save Configuration"}
           </button>
         </div>
       </div>

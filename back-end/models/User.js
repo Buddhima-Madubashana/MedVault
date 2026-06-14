@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema(
 
     failedLoginAttempts: { type: Number, default: 0 },
     isLocked: { type: Boolean, default: false },
+
+    // Password policy compliance
+    mustResetPassword: { type: Boolean, default: false },
+    passwordChangedAt: { type: Date, default: Date.now },
   },
   { timestamps: true },
 );

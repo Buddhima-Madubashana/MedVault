@@ -3,13 +3,37 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const { logAction } = require("../utils/logger"); // Import Logger
+const SystemSettings = require("../models/SystemSettings");
+const { logAction } = require("../utils/logger");
+
+// Helper: fetch the active system settings (returns defaults if none saved)
+async function getSettings() {
+  let settings = await SystemSettings.findOne();
+  if (!settings) {
+    settings = new SystemSettings();
+    await settings.save();
+  }
+  return settings;
+}
+
+// Helper: validate a plaintext password against policy settings
+function validatePasswordPolicy(password, settings) {
+  const errors = [];
+  if (password.length < settings.minPasswordLength) {
+    errors.push(`Password must be at least ${settings.minPasswordLength} characters.`);
+  }
+  if (settings.requireSpecialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+    errors.push("Password must contain at least one special character (!@#$...).");
+  }
+  return errors;
+}
 
 // LOGIN ROUTE
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
+    const settings = await getSettings();
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
@@ -31,13 +55,14 @@ router.post("/login", async (req, res) => {
     if (!isMatch) {
       if (user.role !== "Admin") {
         user.failedLoginAttempts += 1;
-        if (user.failedLoginAttempts >= 3) {
+        // Use maxLoginAttempts from system settings
+        if (user.failedLoginAttempts >= settings.maxLoginAttempts) {
           user.isLocked = true;
           await user.save();
           await logAction(
             user,
             "ACCOUNT_LOCKED",
-            "Account locked due to 3 failed login attempts",
+            `Account locked due to ${settings.maxLoginAttempts} failed login attempts`,
             req,
           );
           return res
@@ -45,16 +70,17 @@ router.post("/login", async (req, res) => {
             .json({ message: "Account Locked: Max attempts reached." });
         }
         await user.save();
+        const attemptsLeft = settings.maxLoginAttempts - user.failedLoginAttempts;
         await logAction(
           user,
           "LOGIN_FAILED",
-          `Failed attempt ${user.failedLoginAttempts}/3`,
+          `Failed attempt ${user.failedLoginAttempts}/${settings.maxLoginAttempts}`,
           req,
         );
         return res
           .status(400)
           .json({
-            message: `Invalid credentials. ${3 - user.failedLoginAttempts} attempts left.`,
+            message: `Invalid credentials. ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left.`,
           });
       }
       return res.status(400).json({ message: "Invalid credentials" });
@@ -67,10 +93,10 @@ router.post("/login", async (req, res) => {
       await user.save();
     }
 
-    // --- NEW: SESSION EXPIRY LOGIC ---
-    // Admins get 24h, others get value from .env (e.g., '15m')
+    // SESSION EXPIRY: Admins get 24h, others get sessionTimeout minutes from settings
+    const sessionMinutes = settings.sessionTimeout || 60;
     const expiryTime =
-      user.role === "Admin" ? "24h" : process.env.SESSION_EXPIRY || "1h";
+      user.role === "Admin" ? "24h" : `${sessionMinutes}m`;
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
@@ -89,15 +115,22 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// ... (Keep the existing Register route below) ...
-// REGISTER ROUTE (Admin Only) - Paste your existing register route here
+// REGISTER ROUTE (Admin Only)
 router.post("/register", async (req, res) => {
-  // ... existing register code ...
   try {
     const { name, email, password, role, specialty, ward, imageUrl } = req.body;
+
     const existingUser = await User.findOne({ email });
     if (existingUser)
       return res.status(400).json({ message: "Email already exists" });
+
+    // --- Validate password against current system policy ---
+    const settings = await getSettings();
+    const policyErrors = validatePasswordPolicy(password, settings);
+    if (policyErrors.length > 0) {
+      return res.status(400).json({ message: policyErrors.join(" ") });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       name,
@@ -107,11 +140,11 @@ router.post("/register", async (req, res) => {
       specialty,
       ward,
       imageUrl,
+      passwordChangedAt: new Date(),
+      mustResetPassword: false,
     });
     await newUser.save();
-    // LOG REGISTER
-    // Note: Since req.user isn't set yet, we might need to manually pass admin info if available,
-    // or just log the new user creation context. For now, let's log the new user:
+
     await logAction(
       newUser,
       "USER_REGISTERED",

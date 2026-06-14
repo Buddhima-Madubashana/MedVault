@@ -78,6 +78,44 @@ router.post("/:id/unlock", async (req, res) => {
   }
 });
 
+// --- NEW: Reset Password (required after policy change) ---
+router.post("/:id/reset-password", async (req, res) => {
+  try {
+    const bcrypt = require("bcryptjs");
+    const SystemSettings = require("../models/SystemSettings");
+
+    const { newPassword } = req.body;
+    if (!newPassword) return res.status(400).json({ message: "New password is required." });
+
+    // Validate against current policy
+    let settings = await SystemSettings.findOne();
+    if (!settings) settings = new SystemSettings();
+
+    const errors = [];
+    if (newPassword.length < settings.minPasswordLength) {
+      errors.push(`Password must be at least ${settings.minPasswordLength} characters.`);
+    }
+    if (settings.requireSpecialChars && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(newPassword)) {
+      errors.push("Password must contain at least one special character (!@#$...).");
+    }
+    if (errors.length > 0) return res.status(400).json({ message: errors.join(" ") });
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.mustResetPassword = false;
+    user.passwordChangedAt = new Date();
+    await user.save();
+
+    await logAction(user, "PASSWORD_RESET", "User reset password to comply with policy", req);
+
+    res.json({ message: "Password updated successfully." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- NEW: Delete User (Doctor/Nurse/Admin) ---
 router.delete("/:id", async (req, res) => {
   try {

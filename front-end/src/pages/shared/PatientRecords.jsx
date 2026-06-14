@@ -12,6 +12,17 @@ import { AnimatePresence, motion } from "framer-motion";
 import Notification from "../../components/Notification";
 import { useAuth } from "../../contexts/AuthContext";
 
+const statusBadgeStyle = (status) => {
+  const map = {
+    Stable: "bg-green-100 text-green-700 border border-green-200",
+    Recovering: "bg-blue-100 text-blue-700 border border-blue-200",
+    "Under Observation": "bg-yellow-100 text-yellow-700 border border-yellow-200",
+    Critical: "bg-red-100 text-red-700 border border-red-200",
+    Discharged: "bg-slate-100 text-slate-500 border border-slate-200",
+  };
+  return map[status] || map["Stable"];
+};
+
 const PatientRecords = () => {
   const { user, role, token } = useAuth();
   const [patients, setPatients] = useState([]);
@@ -246,8 +257,8 @@ const PatientRecords = () => {
             className="relative p-6 transition-all bg-white border border-blue-300 shadow-sm dark:bg-slate-800 rounded-2xl dark:border-blue-700 group hover:shadow-md"
           >
             <div className="flex justify-between mb-4">
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">
-                Stable
+              <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold ${statusBadgeStyle(patient.status || "Stable")}`}>
+                {patient.status || "Stable"}
               </span>
               <button
                 onClick={() => initiateDelete(patient)}

@@ -1,30 +1,75 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   User,
-  Heart,
   Activity,
   FileText,
   Shield,
   Clock,
+  Edit3,
+  Check,
+  X,
+  Plus,
+  ChevronDown,
+  Stethoscope,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { AnimatePresence, motion } from "framer-motion";
+import Notification from "../../components/Notification";
+
+// --- Status config ---
+const STATUS_OPTIONS = [
+  { value: "Stable", color: "green", dot: "bg-green-500" },
+  { value: "Recovering", color: "blue", dot: "bg-blue-500" },
+  { value: "Under Observation", color: "yellow", dot: "bg-yellow-500" },
+  { value: "Critical", color: "red", dot: "bg-red-500" },
+  { value: "Discharged", color: "slate", dot: "bg-slate-400" },
+];
+
+const statusStyle = (status) => {
+  const map = {
+    Stable: "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
+    Recovering: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+    "Under Observation": "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800",
+    Critical: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+    Discharged: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
+  };
+  return map[status] || map["Stable"];
+};
 
 const PatientDetails = () => {
   const { id } = useParams();
-  const { token } = useAuth();
+  const { token, role, user } = useAuth();
   const navigate = useNavigate();
+  const isDoctor = role === "Doctor" || role === "Admin";
+
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notification, setNotification] = useState(null);
 
-  useEffect(() => {
+  // --- Medical History edit state ---
+  const [editingHistory, setEditingHistory] = useState(false);
+  const [historyDraft, setHistoryDraft] = useState("");
+
+  // --- Status edit state ---
+  const [editingStatus, setEditingStatus] = useState(false);
+  const [statusDraft, setStatusDraft] = useState("");
+  const statusDropdownRef = useRef(null);
+
+  // --- Timeline state ---
+  const [showAddTimeline, setShowAddTimeline] = useState(false);
+  const [newTimelineEvent, setNewTimelineEvent] = useState("");
+  const [savingTimeline, setSavingTimeline] = useState(false);
+
+  const showNotification = (type, title, msg) =>
+    setNotification({ type, title, message: msg, duration: 3000 });
+
+  // --- Fetch patient ---
+  const fetchPatient = () => {
     if (!token) return;
-
-    // Fetch single patient details
-    // Note: You might need to add a backend route for GET /api/patients/:id if it doesn't exist
-    // For now, we'll fetch all and find one, or you can implement the specific route.
-    fetch(`http://localhost:5000/api/patients`, {
+    fetch(`http://localhost:5000/api/patients/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -32,15 +77,92 @@ const PatientDetails = () => {
         return res.json();
       })
       .then((data) => {
-        const found = data.find((p) => p._id === id);
-        setPatient(found);
+        setPatient(data);
+        setHistoryDraft(data.medicalHistory || "");
+        setStatusDraft(data.status || "Stable");
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchPatient();
   }, [id, token]);
+
+  // Close status dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target)) {
+        setEditingStatus(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // --- PATCH helper ---
+  const patchPatient = async (payload) => {
+    const res = await fetch(`http://localhost:5000/api/patients/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to update");
+    }
+    return res.json();
+  };
+
+  // --- Save Medical History ---
+  const saveHistory = async () => {
+    try {
+      const updated = await patchPatient({ medicalHistory: historyDraft });
+      setPatient(updated);
+      setEditingHistory(false);
+      showNotification("success", "Saved", "Medical history updated.");
+    } catch (err) {
+      showNotification("error", "Error", err.message);
+    }
+  };
+
+  // --- Save Status ---
+  const saveStatus = async (newStatus) => {
+    try {
+      const updated = await patchPatient({ status: newStatus });
+      setPatient(updated);
+      setStatusDraft(newStatus);
+      setEditingStatus(false);
+      showNotification("success", "Updated", `Status changed to ${newStatus}.`);
+    } catch (err) {
+      showNotification("error", "Error", err.message);
+    }
+  };
+
+  // --- Add Timeline Entry ---
+  const addTimelineEntry = async () => {
+    if (!newTimelineEvent.trim()) return;
+    setSavingTimeline(true);
+    try {
+      const updated = await patchPatient({
+        newTimelineEntry: { event: newTimelineEvent.trim() },
+      });
+      setPatient(updated);
+      setNewTimelineEvent("");
+      setShowAddTimeline(false);
+      showNotification("success", "Added", "Timeline entry added.");
+    } catch (err) {
+      showNotification("error", "Error", err.message);
+    } finally {
+      setSavingTimeline(false);
+    }
+  };
 
   if (loading)
     return (
@@ -51,17 +173,20 @@ const PatientDetails = () => {
       <div className="p-10 text-center text-red-500">Patient not found.</div>
     );
 
+  const currentStatus = patient.status || "Stable";
+  const timeline = patient.treatmentTimeline || [];
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header / Back Button */}
+      {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 transition-colors text-slate-500 hover:text-slate-800"
+        className="flex items-center gap-2 transition-colors text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
       >
         <ArrowLeft size={20} /> Back to Registry
       </button>
 
-      {/* Main Profile Header */}
+      {/* ── Main Profile Header ── */}
       <div className="relative p-8 overflow-hidden bg-white border border-blue-200 shadow-xl dark:bg-slate-800 rounded-3xl dark:border-slate-700 shadow-blue-900/5">
         <div className="absolute top-0 right-0 p-6 opacity-10">
           <Activity size={120} />
@@ -71,7 +196,7 @@ const PatientDetails = () => {
           <img
             src={
               patient.imageUrl ||
-              `https://ui-avatars.com/api/?name=${patient.name}`
+              `https://ui-avatars.com/api/?name=${patient.name}&background=random`
             }
             className="object-cover w-32 h-32 border-4 shadow-md rounded-3xl border-blue-50 dark:border-slate-700"
             alt={patient.name}
@@ -87,165 +212,306 @@ const PatientDetails = () => {
                   <span className="font-mono">{patient._id}</span>
                 </p>
               </div>
-              <span className="px-4 py-2 font-bold text-green-700 bg-green-100 border border-green-200 rounded-xl">
-                Status: Stable
-              </span>
+
+              {/* ── Status Badge / Editable ── */}
+              {isDoctor ? (
+                <div className="relative" ref={statusDropdownRef}>
+                  <button
+                    onClick={() => setEditingStatus(!editingStatus)}
+                    className={`flex items-center gap-2 px-4 py-2 font-bold rounded-xl border transition-all ${statusStyle(currentStatus)}`}
+                  >
+                    {currentStatus}
+                    <ChevronDown size={16} className={`transition-transform ${editingStatus ? "rotate-180" : ""}`} />
+                  </button>
+                  <AnimatePresence>
+                    {editingStatus && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                        className="absolute right-0 top-12 z-50 w-52 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden"
+                      >
+                        <p className="text-xs font-bold uppercase text-slate-400 px-4 pt-3 pb-1 tracking-wider">
+                          Change Status
+                        </p>
+                        {STATUS_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => saveStatus(opt.value)}
+                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${opt.value === currentStatus ? "opacity-50 cursor-default" : ""}`}
+                            disabled={opt.value === currentStatus}
+                          >
+                            <span className={`w-2 h-2 rounded-full ${opt.dot}`} />
+                            {opt.value}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <span className={`px-4 py-2 font-bold rounded-xl border ${statusStyle(currentStatus)}`}>
+                  {currentStatus}
+                </span>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-6 mt-8 md:grid-cols-4">
               <div className="p-4 border bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-slate-100 dark:border-slate-700">
-                <span className="block mb-1 text-xs font-bold uppercase text-slate-400">
-                  Age
-                </span>
-                <span className="text-xl font-bold text-slate-800 dark:text-white">
-                  {patient.age} Yrs
-                </span>
+                <span className="block mb-1 text-xs font-bold uppercase text-slate-400">Age</span>
+                <span className="text-xl font-bold text-slate-800 dark:text-white">{patient.age} Yrs</span>
               </div>
               <div className="p-4 border bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-slate-100 dark:border-slate-700">
-                <span className="block mb-1 text-xs font-bold uppercase text-slate-400">
-                  Ward
-                </span>
-                <span className="text-xl font-bold text-slate-800 dark:text-white">
-                  {patient.ward}
-                </span>
+                <span className="block mb-1 text-xs font-bold uppercase text-slate-400">Ward</span>
+                <span className="text-xl font-bold text-slate-800 dark:text-white">{patient.ward}</span>
               </div>
               <div className="col-span-2 p-4 border bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-slate-100 dark:border-slate-700">
-                <span className="block mb-1 text-xs font-bold uppercase text-slate-400">
-                  Condition
-                </span>
-                <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                  {patient.disease}
-                </span>
+                <span className="block mb-1 text-xs font-bold uppercase text-slate-400">Condition</span>
+                <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{patient.disease}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Detailed Sections */}
+      {/* ── Detailed Sections ── */}
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        {/* Left Column: Vitals (Mock Data for UI) */}
+
+        {/* Left Column: Vitals + Contact */}
         <div className="space-y-6 md:col-span-1">
+          {/* Vitals */}
           <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
             <h3 className="flex items-center gap-2 mb-4 text-lg font-bold text-slate-900 dark:text-white">
               <Activity className="text-red-500" size={20} /> Current Vitals
             </h3>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
-                <span className="text-sm font-medium text-slate-500">
-                  Heart Rate
-                </span>
-                <span className="text-lg font-bold text-slate-900 dark:text-white">
-                  72 bpm
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
-                <span className="text-sm font-medium text-slate-500">
-                  Blood Pressure
-                </span>
-                <span className="text-lg font-bold text-slate-900 dark:text-white">
-                  120/80
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
-                <span className="text-sm font-medium text-slate-500">
-                  Temperature
-                </span>
-                <span className="text-lg font-bold text-slate-900 dark:text-white">
-                  98.6 °F
-                </span>
-              </div>
+              {[["Heart Rate", "72 bpm"], ["Blood Pressure", "120/80"], ["Temperature", "98.6 °F"]].map(([label, val]) => (
+                <div key={label} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                  <span className="text-sm font-medium text-slate-500">{label}</span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-white">{val}</span>
+                </div>
+              ))}
             </div>
           </div>
 
+          {/* Contact Info */}
           <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
             <h3 className="flex items-center gap-2 mb-4 text-lg font-bold text-slate-900 dark:text-white">
               <User className="text-blue-500" size={20} /> Contact Info
             </h3>
-            <div className="space-y-4">
-              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
-                <span className="block text-xs font-bold uppercase text-slate-400">
-                  Guardian
-                </span>
-                <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {patient.guardianName || "N/A"}
-                </span>
-              </div>
-              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
-                <span className="block text-xs font-bold uppercase text-slate-400">
-                  Phone
-                </span>
-                <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {patient.phone || "N/A"}
-                </span>
-              </div>
-              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
-                <span className="block text-xs font-bold uppercase text-slate-400">
-                  Email
-                </span>
-                <span className="text-sm font-semibold text-slate-900 dark:text-white break-all">
-                  {patient.email || "N/A"}
-                </span>
-              </div>
-              <div className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
-                <span className="block text-xs font-bold uppercase text-slate-400">
-                  Address
-                </span>
-                <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {patient.address || "N/A"}
-                </span>
-              </div>
+            <div className="space-y-3">
+              {[
+                ["Guardian", patient.guardianName],
+                ["Phone", patient.phone],
+                ["Email", patient.email],
+                ["Address", patient.address],
+              ].map(([label, val]) => (
+                <div key={label} className="p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                  <span className="block text-xs font-bold uppercase text-slate-400">{label}</span>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white break-all">{val || "N/A"}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Right Column: History & Notes */}
+        {/* Right Column: Medical History + Timeline */}
         <div className="space-y-6 md:col-span-2">
+
+          {/* ── Medical History ── */}
           <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
-            <h3 className="flex items-center gap-2 mb-4 text-lg font-bold text-slate-900 dark:text-white">
-              <FileText className="text-blue-500" size={20} /> Medical History
-            </h3>
-            <p className="leading-relaxed text-slate-500">
-              Patient admitted with symptoms of {patient.disease}. Initial
-              assessment shows stable vitals. Requires monitoring and standard
-              treatment protocol.
-              <br />
-              <br />
-              <strong>Admitted By:</strong>{" "}
-              {patient.approvedBy
-                ? `Dr. ID: ${patient.approvedBy}`
-                : "System Admin"}
-              <br />
-              <strong>Admission Date:</strong>{" "}
-              {new Date(patient.createdAt).toLocaleDateString()}
-            </p>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                <FileText className="text-blue-500" size={20} /> Medical History
+              </h3>
+              {isDoctor && !editingHistory && (
+                <button
+                  onClick={() => {
+                    setHistoryDraft(patient.medicalHistory || "");
+                    setEditingHistory(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
+                >
+                  <Edit3 size={13} /> Edit
+                </button>
+              )}
+              {!isDoctor && (
+                <span className="flex items-center gap-1 text-xs text-slate-400">
+                  <Lock size={12} /> Doctor only
+                </span>
+              )}
+            </div>
+
+            {editingHistory ? (
+              <div className="space-y-3">
+                <textarea
+                  className="w-full px-4 py-3 rounded-xl border border-blue-300 bg-blue-50/30 dark:bg-slate-900 dark:border-blue-700 dark:text-white text-slate-800 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  rows={6}
+                  value={historyDraft}
+                  onChange={(e) => setHistoryDraft(e.target.value)}
+                  placeholder="Enter detailed medical history, notes, and observations..."
+                  autoFocus
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setEditingHistory(false)}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors"
+                  >
+                    <X size={15} /> Cancel
+                  </button>
+                  <button
+                    onClick={saveHistory}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md shadow-blue-500/20 transition-colors"
+                  >
+                    <Check size={15} /> Save Changes
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                {patient.medicalHistory && patient.medicalHistory.trim() ? (
+                  patient.medicalHistory
+                ) : (
+                  <span className="italic">
+                    Patient admitted with symptoms of {patient.disease}. Initial assessment shows stable vitals.
+                    Requires monitoring and standard treatment protocol.
+                    {"\n\n"}
+                    <strong className="not-italic text-slate-600 dark:text-slate-300">Admitted By:</strong>{" "}
+                    {patient.approvedBy ? `Dr. ID: ${patient.approvedBy}` : "System Admin"}
+                    {"\n"}
+                    <strong className="not-italic text-slate-600 dark:text-slate-300">Admission Date:</strong>{" "}
+                    {new Date(patient.createdAt).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Timeline Mockup */}
+          {/* ── Treatment Timeline ── */}
           <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
-            <h3 className="flex items-center gap-2 mb-4 text-lg font-bold text-slate-900 dark:text-white">
-              <Clock className="text-purple-500" size={20} /> Treatment Timeline
-            </h3>
-            <div className="pl-6 ml-2 space-y-6 border-l-2 border-slate-100 dark:border-slate-700">
-              <div className="relative">
-                <span className="absolute -left-[31px] top-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-slate-800"></span>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">
-                  Patient Admitted
-                </p>
-                <p className="text-xs text-slate-500">
-                  {new Date(patient.createdAt).toLocaleString()}
-                </p>
-              </div>
-              <div className="relative">
-                <span className="absolute -left-[31px] top-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white dark:border-slate-800"></span>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">
-                  Initial Checkup Completed
-                </p>
-                <p className="text-xs text-slate-500">Just now</p>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                <Clock className="text-purple-500" size={20} /> Treatment Timeline
+              </h3>
+              <div className="flex items-center gap-2">
+                {!isDoctor && (
+                  <span className="flex items-center gap-1 text-xs text-slate-400">
+                    <Lock size={12} /> Doctor only
+                  </span>
+                )}
+                {isDoctor && (
+                  <button
+                    onClick={() => setShowAddTimeline(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded-lg transition-colors"
+                  >
+                    <Plus size={13} /> Add Entry
+                  </button>
+                )}
               </div>
             </div>
+
+            {/* Add Timeline Form */}
+            <AnimatePresence>
+              {showAddTimeline && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mb-5 p-4 rounded-xl border border-purple-200 bg-purple-50/40 dark:bg-purple-900/10 dark:border-purple-800 space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-purple-500">New Timeline Entry</p>
+                    <textarea
+                      className="w-full px-4 py-2.5 rounded-xl border border-purple-200 bg-white dark:bg-slate-900 dark:border-purple-700 dark:text-white text-slate-800 text-sm outline-none focus:ring-2 focus:ring-purple-400 resize-none"
+                      rows={3}
+                      value={newTimelineEvent}
+                      onChange={(e) => setNewTimelineEvent(e.target.value)}
+                      placeholder="Describe the treatment event, procedure, or observation..."
+                      autoFocus
+                    />
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-slate-400 flex items-center gap-1">
+                        <Stethoscope size={12} />
+                        Will be signed as <strong className="text-slate-600 dark:text-slate-300">Dr. {user?.name}</strong> · {new Date().toLocaleDateString()}
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setShowAddTimeline(false); setNewTimelineEvent(""); }}
+                          className="px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={addTimelineEntry}
+                          disabled={!newTimelineEvent.trim() || savingTimeline}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-md shadow-purple-500/20 transition-colors disabled:opacity-50"
+                        >
+                          {savingTimeline ? "Saving..." : <><Check size={12} /> Add</>}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Timeline List */}
+            <div className="pl-6 ml-2 space-y-6 border-l-2 border-slate-100 dark:border-slate-700">
+              {/* Admission entry (always first) */}
+              <div className="relative">
+                <span className="absolute -left-[31px] top-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-slate-800" />
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Patient Admitted</p>
+                <p className="text-xs text-slate-500">{new Date(patient.createdAt).toLocaleString()}</p>
+              </div>
+
+              {/* Dynamic entries from DB */}
+              {timeline.length === 0 && (
+                <div className="relative">
+                  <span className="absolute -left-[31px] top-1 w-4 h-4 bg-blue-400 rounded-full border-2 border-white dark:border-slate-800" />
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">Initial Checkup Completed</p>
+                  <p className="text-xs text-slate-500">Soon after admission</p>
+                </div>
+              )}
+
+              <AnimatePresence>
+                {[...timeline].reverse().map((entry, idx) => (
+                  <motion.div
+                    key={entry._id || idx}
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="relative"
+                  >
+                    <span className="absolute -left-[31px] top-1 w-4 h-4 bg-purple-500 rounded-full border-2 border-white dark:border-slate-800" />
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">{entry.event}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <p className="text-xs text-slate-500">
+                        {new Date(entry.date).toLocaleString()}
+                      </p>
+                      {entry.doctorName && (
+                        <span className="flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-full">
+                          <Stethoscope size={10} /> Dr. {entry.doctorName}
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
           </div>
+
         </div>
+      </div>
+
+      {/* Notification Toast */}
+      <div className="fixed z-50 bottom-6 right-6">
+        <AnimatePresence>
+          {notification && (
+            <Notification
+              {...notification}
+              onClose={() => setNotification(null)}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
