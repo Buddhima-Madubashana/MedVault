@@ -115,7 +115,9 @@ router.put("/:id/approve", authMiddleware, async (req, res) => {
 
     // Log Action
     const actor = await User.findById(req.user._id);
-    await logAction(actor, "ADMIN_GRANT", `Granted temporary admin access to user ${request.requester}`, req);
+    const requesterUser = await User.findById(request.requester);
+    const requesterName = requesterUser ? requesterUser.name : request.requester;
+    await logAction(actor, "ADMIN_GRANT", `Granted temporary admin access to doctor ${requesterName}`, req);
 
     res.json({ message: "Permission granted", request });
   } catch (err) {
@@ -171,7 +173,9 @@ router.put("/:id/revoke", authMiddleware, async (req, res) => {
     });
     
     // Log Action
-    await logAction(admin, "ADMIN_REVOKE", `Revoked temporary admin access for user ${request.requester}`, req);
+    const requesterUser = await User.findById(request.requester);
+    const requesterName = requesterUser ? requesterUser.name : request.requester;
+    await logAction(admin, "ADMIN_REVOKE", `Revoked temporary admin access for doctor ${requesterName}`, req);
 
     res.json({ message: "Permission revoked" });
   } catch (err) {

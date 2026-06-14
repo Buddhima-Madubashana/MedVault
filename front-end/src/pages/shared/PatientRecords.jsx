@@ -242,7 +242,7 @@ const PatientRecords = () => {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2 font-bold text-white transition-all bg-blue-600 shadow-lg rounded-xl hover:bg-blue-700"
+          className="flex items-center gap-2 px-5 py-2.5 font-bold text-white transition-all bg-primary-600 shadow-lg rounded-xl hover:bg-primary-700 shadow-primary-500/30"
         >
           <Plus size={18} />{" "}
           {role === "Nurse" ? "Request Admission" : "Add Patient"}
@@ -254,7 +254,7 @@ const PatientRecords = () => {
         {patients.map((patient) => (
           <div
             key={patient._id}
-            className="relative p-6 transition-all bg-white border border-blue-300 shadow-sm dark:bg-slate-800 rounded-2xl dark:border-blue-700 group hover:shadow-md"
+            className="relative p-6 transition-all bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-soft dark:bg-slate-800/80 rounded-3xl dark:border-slate-700/60 group hover:shadow-glass hover:-translate-y-1"
           >
             <div className="flex justify-between mb-4">
               <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold ${statusBadgeStyle(patient.status || "Stable")}`}>
@@ -274,10 +274,10 @@ const PatientRecords = () => {
                 alt=""
               />
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                   {patient.name}
                 </h3>
-                <p className="text-sm font-medium text-blue-600">
+                <p className="text-sm font-semibold text-primary-600 dark:text-primary-400">
                   {patient.ward}
                 </p>
               </div>
@@ -301,8 +301,8 @@ const PatientRecords = () => {
               </div>
             </div>
             <button
-              onClick={() => navigate(`${patient._id}`)} // Use navigate relative path or absolute `/role/patients/${patient._id}`
-              className="w-full py-2.5 rounded-xl border border-blue-200 text-blue-600 font-medium text-sm hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+              onClick={() => navigate(`${patient._id}`)}
+              className="w-full py-2.5 rounded-xl border border-primary-200 dark:border-primary-900/50 text-primary-600 dark:text-primary-400 font-bold text-sm hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all flex items-center justify-center gap-2"
             >
               <FileText size={16} /> View Full Record
             </button>
@@ -348,7 +348,7 @@ const PatientRecords = () => {
                         if (confirmDialog.onConfirm) confirmDialog.onConfirm();
                         setConfirmDialog({ ...confirmDialog, isOpen: false });
                       }}
-                      className="px-4 py-2 text-sm font-bold text-white transition-all bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 shadow-blue-500/20"
+                      className="px-4 py-2 text-sm font-bold text-white transition-all bg-red-600 rounded-lg shadow-md hover:bg-red-700 shadow-red-500/20"
                     >
                       Confirm
                     </button>
@@ -408,7 +408,7 @@ const PatientRecords = () => {
                           <UserCheck className="w-12 h-12 m-auto text-slate-300 mt-9" />
                         )}
                       </div>
-                      <label className="cursor-pointer px-4 py-2 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30">
+                      <label className="cursor-pointer px-4 py-2 text-sm font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/30">
                         Upload Photo
                         <input
                           type="file"
@@ -434,7 +434,7 @@ const PatientRecords = () => {
                             onChange={(e) =>
                               setNewPatient({ ...newPatient, name: e.target.value })
                             }
-                            className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                            className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                             placeholder="e.g. Sarah Connor"
                             required
                           />
@@ -451,7 +451,7 @@ const PatientRecords = () => {
                             onChange={(e) =>
                               setNewPatient({ ...newPatient, age: e.target.value })
                             }
-                            className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                            className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                             placeholder="34"
                             required
                           />
@@ -467,7 +467,7 @@ const PatientRecords = () => {
                             onChange={(e) =>
                               setNewPatient({ ...newPatient, guardianName: e.target.value })
                             }
-                            className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                            className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                             placeholder="Guardian Name"
                           />
                         </div>
@@ -488,7 +488,7 @@ const PatientRecords = () => {
                               onChange={(e) =>
                                 setNewPatient({ ...newPatient, email: e.target.value })
                               }
-                              className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                              className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-primary-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                               placeholder="email@example.com"
                             />
                           </div>
@@ -504,7 +504,7 @@ const PatientRecords = () => {
                               onChange={(e) =>
                                 setNewPatient({ ...newPatient, phone: e.target.value })
                               }
-                              className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                              className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-primary-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                               placeholder="+1 234 567 8900"
                             />
                           </div>
@@ -519,7 +519,7 @@ const PatientRecords = () => {
                               onChange={(e) =>
                                 setNewPatient({ ...newPatient, address: e.target.value })
                               }
-                              className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                              className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-primary-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                               placeholder="123 Street Name, City"
                             />
                           </div>
@@ -538,7 +538,7 @@ const PatientRecords = () => {
                               onChange={(e) =>
                                 setNewPatient({ ...newPatient, ward: e.target.value })
                               }
-                              className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                              className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                               required
                             >
                               <option value="">Select Ward</option>
@@ -568,7 +568,7 @@ const PatientRecords = () => {
                                   disease: e.target.value,
                                 })
                               }
-                              className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                              className="w-full px-4 py-2.5 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                               placeholder="Acute Bronchitis"
                               required
                             />
@@ -590,7 +590,7 @@ const PatientRecords = () => {
                                       doctorId: e.target.value,
                                     })
                                   }
-                                  className="w-full px-4 py-2.5 border border-blue-300 outline-none appearance-none cursor-pointer rounded-xl bg-blue-50/50 hover:bg-blue-50 dark:bg-slate-800 dark:border-blue-900 dark:text-white"
+                                  className="w-full px-4 py-2.5 border border-primary-200 outline-none appearance-none cursor-pointer rounded-xl bg-primary-50/50 hover:bg-primary-50 dark:bg-slate-800 dark:border-primary-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                                   required
                                 >
                                   <option value="">-- Choose a Doctor --</option>
@@ -621,7 +621,7 @@ const PatientRecords = () => {
                   <button
                     type="submit"
                     form="add-patient-form"
-                    className="px-6 py-2.5 text-sm font-bold text-white transition-all bg-blue-600 shadow-lg hover:bg-blue-700 rounded-xl shadow-blue-500/20"
+                    className="px-6 py-2.5 text-sm font-bold text-white transition-all bg-primary-600 shadow-lg hover:bg-primary-700 rounded-xl shadow-primary-500/20"
                   >
                     {role === "Nurse" ? "Send Admission Request" : "Create Patient Record"}
                   </button>

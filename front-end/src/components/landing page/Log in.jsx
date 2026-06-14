@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
 
 // --- ICONS ---
@@ -32,6 +33,24 @@ const ShieldIcon = () => (
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 );
+
+// --- THEME TOGGLE BUTTON ---
+const ThemeToggleButton = () => {
+  const { theme, toggleTheme } = useTheme();
+  return (
+    <button
+      onClick={toggleTheme}
+      className="fixed top-6 right-6 z-50 p-3 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200/60 dark:border-slate-700/60 shadow-soft text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+      title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+    >
+      {theme === "dark" ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      )}
+    </button>
+  );
+};
 
 // --- PASSWORD RESET VIEW ---
 function PasswordResetRequired({ pendingLoginData, token, onSuccess }) {
@@ -83,43 +102,46 @@ function PasswordResetRequired({ pendingLoginData, token, onSuccess }) {
   };
 
   return (
-    <div className="relative flex items-center justify-center w-full mt-8 overflow-hidden font-sans">
-      <div className="relative w-full max-w-sm p-6 space-y-5 bg-white border rounded-lg shadow-lg dark:bg-black border-zinc-200 dark:border-zinc-800">
+    <div className="relative flex items-center justify-center w-full min-h-[80vh] font-sans">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 -z-10" />
+      <div className="relative w-full max-w-md p-8 space-y-6 bg-white/70 backdrop-blur-xl border rounded-3xl shadow-soft dark:bg-slate-900/70 border-slate-200/50 dark:border-slate-800">
         {/* Header */}
-        <div className="space-y-3 text-center">
-          <div className="inline-flex p-2 border rounded-md bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
+        <div className="space-y-3 text-center flex flex-col items-center">
+          <div className="inline-flex p-3 rounded-2xl bg-orange-100/50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
             <ShieldIcon />
           </div>
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-              Password Reset Required
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Security Update Required
             </h1>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              The system's password policy has been updated. Please set a new
-              compliant password to continue.
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              The hospital's password policy has been updated. Please set a new
+              compliant password to access MedVault.
             </p>
           </div>
         </div>
 
         {/* Policy hint */}
         {settings && (
-          <div className="p-3 text-xs bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg space-y-1 text-zinc-500">
-            <p className="font-bold text-zinc-700 dark:text-zinc-300">Current policy requires:</p>
-            <p>• Minimum {settings.minPasswordLength} characters</p>
-            {settings.requireSpecialChars && <p>• At least one special character (!@#$...)</p>}
+          <div className="p-4 text-sm bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 rounded-2xl space-y-2 text-slate-600 dark:text-slate-300">
+            <p className="font-semibold text-primary-700 dark:text-primary-400">Policy Requirements:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Minimum {settings.minPasswordLength} characters</li>
+              {settings.requireSpecialChars && <li>At least one special character (!@#$...)</li>}
+            </ul>
           </div>
         )}
 
         {error && (
-          <div className="p-3 text-sm text-red-600 bg-red-100 rounded-md dark:bg-red-900/30 dark:text-red-400">
+          <div className="p-4 text-sm font-medium text-red-600 bg-red-50 rounded-2xl dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-900/50">
             {error}
           </div>
         )}
 
-        <form className="space-y-4" onSubmit={handleReset}>
+        <form className="space-y-5" onSubmit={handleReset}>
           {/* New Password */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+            <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
               New Password
             </label>
             <div className="relative">
@@ -129,9 +151,9 @@ function PasswordResetRequired({ pendingLoginData, token, onSuccess }) {
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter new password"
                 required
-                className="flex w-full px-3 py-5 pr-10 text-sm bg-white border rounded-md outline-none border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 dark:text-white"
+                className="w-full px-4 py-3 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 focus:ring-2 focus:ring-primary-500 dark:text-white transition-all"
               />
-              <button type="button" onClick={() => setShowNew(!showNew)} className="absolute -translate-y-1/2 right-3 top-1/2">
+              <button type="button" onClick={() => setShowNew(!showNew)} className="absolute -translate-y-1/2 right-4 top-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 {showNew ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
@@ -139,7 +161,7 @@ function PasswordResetRequired({ pendingLoginData, token, onSuccess }) {
 
           {/* Confirm Password */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+            <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
               Confirm Password
             </label>
             <div className="relative">
@@ -149,9 +171,9 @@ function PasswordResetRequired({ pendingLoginData, token, onSuccess }) {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm new password"
                 required
-                className="flex w-full px-3 py-5 pr-10 text-sm bg-white border rounded-md outline-none border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 dark:text-white"
+                className="w-full px-4 py-3 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 focus:ring-2 focus:ring-primary-500 dark:text-white transition-all"
               />
-              <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute -translate-y-1/2 right-3 top-1/2">
+              <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute -translate-y-1/2 right-4 top-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 {showConfirm ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             </div>
@@ -160,9 +182,9 @@ function PasswordResetRequired({ pendingLoginData, token, onSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium transition-colors rounded-md shadow bg-zinc-900 text-zinc-50 hover:bg-zinc-900/90 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90 h-9 disabled:opacity-50"
+            className="w-full px-4 py-3 text-sm font-bold transition-all rounded-xl shadow-lg bg-primary-600 text-white hover:bg-primary-700 shadow-primary-500/30 disabled:opacity-50 disabled:shadow-none"
           >
-            {loading ? "Saving..." : "Set New Password & Continue"}
+            {loading ? "Updating Security..." : "Set Password & Continue"}
           </button>
         </form>
       </div>
@@ -249,48 +271,52 @@ function Login({ onSwitchToSignup }) {
   }
 
   return (
-    <div className="relative flex items-center justify-center w-full mt-8 overflow-hidden font-sans">
-      <div className="relative w-full max-w-sm p-6 space-y-6 bg-white border rounded-lg shadow-lg dark:bg-black border-zinc-200 dark:border-zinc-800 dark:shadow-zinc-900/50">
-        <div className="space-y-3 text-center">
-          <div className="inline-flex p-2 border rounded-md bg-zinc-100 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+    <div className="relative flex items-center justify-center w-full min-h-[80vh] font-sans">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 -z-10" />
+      <ThemeToggleButton />
+      <div className="relative w-full max-w-md p-8 space-y-8 bg-white/70 backdrop-blur-xl border rounded-3xl shadow-soft dark:bg-slate-900/70 border-slate-200/50 dark:border-slate-800">
+        <div className="space-y-3 text-center flex flex-col items-center">
+          <div className="inline-flex p-4 rounded-2xl bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 mb-2">
             <UserIcon />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">
-              Welcome back
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+              MedVault
             </h1>
-            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-              Enter your email to sign in
+            <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+              Secure Clinical Authentication
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="p-3 text-sm text-red-600 bg-red-100 rounded-md dark:bg-red-900/30 dark:text-red-400">
+          <div className="p-4 text-sm font-medium text-red-600 bg-red-50 rounded-2xl dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-900/50">
             {error}
           </div>
         )}
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium leading-none text-zinc-900 dark:text-zinc-50">
-              Email
+            <label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Provider Email
             </label>
             <input
               type="email"
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@example.com"
+              placeholder="dr.smith@hospital.org"
               required
-              className="flex w-full px-3 py-5 text-sm bg-white border rounded-md outline-none border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 dark:text-white"
+              className="w-full px-4 py-3 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 focus:ring-2 focus:ring-primary-500 dark:text-white transition-all"
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium leading-none text-zinc-900 dark:text-zinc-50">
-              Password
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Password
+              </label>
+            </div>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -299,12 +325,12 @@ function Login({ onSwitchToSignup }) {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
-                className="flex w-full px-3 py-5 pr-10 text-sm bg-white border rounded-md outline-none border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 focus:ring-1 focus:ring-zinc-950 dark:focus:ring-zinc-300 dark:text-white"
+                className="w-full px-4 py-3 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 focus:ring-2 focus:ring-primary-500 dark:text-white transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute transition-colors -translate-y-1/2 right-3 top-1/2 hover:text-zinc-900 dark:hover:text-zinc-100"
+                className="absolute transition-colors -translate-y-1/2 right-4 top-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
@@ -314,9 +340,9 @@ function Login({ onSwitchToSignup }) {
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium transition-colors rounded-md shadow bg-zinc-900 text-zinc-50 hover:bg-zinc-900/90 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90 h-9 disabled:opacity-50"
+            className="w-full px-4 py-3.5 text-sm font-bold transition-all rounded-xl shadow-lg bg-primary-600 text-white hover:bg-primary-700 shadow-primary-500/30 disabled:opacity-50 disabled:shadow-none"
           >
-            {loading ? "Signing In..." : "Sign In"}
+            {loading ? "Authenticating..." : "Secure Login"}
           </button>
         </form>
       </div>

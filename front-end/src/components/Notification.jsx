@@ -106,12 +106,12 @@ const LoadingSpinner = ({ className }) => (
 );
 const notificationConfig = {
   info: {
-    bgColor: "bg-blue-50 dark:bg-blue-950/20",
-    borderColor: "border-blue-200 dark:border-blue-800/50",
-    iconColor: "text-blue-500 dark:text-blue-400",
+    bgColor: "bg-primary-50 dark:bg-primary-950/20",
+    borderColor: "border-primary-200 dark:border-primary-800/50",
+    iconColor: "text-primary-500 dark:text-primary-400",
     icon: <InfoIcon className="w-6 h-6" />,
     gradient:
-      "from-blue-100/60 to-transparent dark:from-blue-900/20 dark:to-transparent",
+      "from-primary-100/60 to-transparent dark:from-primary-900/20 dark:to-transparent",
   },
   success: {
     bgColor: "bg-green-50 dark:bg-green-950/20",
@@ -214,7 +214,7 @@ const Notification = ({
               ease: "linear",
             }}
             onAnimationComplete={() => onClose()}
-            className={`h-full bg-gradient-to-r from-green-400 via-blue-400 to-sky-400 dark:from-green-500 dark:via-blue-500 dark:to-sky-500`}
+            className={`h-full bg-gradient-to-r from-green-400 via-primary-400 to-sky-400 dark:from-green-500 dark:via-primary-500 dark:to-sky-500`}
           ></motion.div>
         </div>
       )}

@@ -25,7 +25,7 @@ const getGreeting = () => {
 // --- Reusable Widget Card (Blue Border Theme) ---
 const WidgetCard = ({ children, className = "" }) => (
   <div
-    className={`bg-white dark:bg-slate-800 rounded-2xl border border-blue-300 dark:border-blue-700 shadow-sm shadow-blue-200/50 dark:shadow-blue-900/20 p-6 ${className}`}
+    className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-soft p-6 ${className}`}
   >
     {children}
   </div>
@@ -221,13 +221,13 @@ const DashboardHome = () => {
   return (
     <div className="space-y-8">
       {/* 1. Welcome Banner */}
-      <div className="relative p-8 overflow-hidden text-white shadow-xl bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl shadow-blue-900/20">
+      <div className="relative p-8 overflow-hidden text-white shadow-xl bg-gradient-to-r from-primary-600 to-teal-600 dark:from-primary-800 dark:to-teal-800 rounded-3xl shadow-primary-900/20">
         <div className="relative z-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div>
             <h1 className="mb-2 text-3xl font-bold tracking-tight">
               {greeting}, {user.name.split(" ")[0]}
             </h1>
-            <p className="max-w-xl text-lg text-blue-100 opacity-90">
+            <p className="max-w-xl text-lg text-primary-100 opacity-90">
               {role === "Admin"
                 ? (user.isTempAdmin && timeLeft > 0
                     ? `TEMPORARY ADMIN ACTIVE. Time Remaining: ${formatTimeKey(timeLeft)}` 
@@ -251,7 +251,7 @@ const DashboardHome = () => {
               ) : (
                 <button 
                   onClick={() => setIsRequestModalOpen(true)}
-                  className="px-5 py-2.5 bg-white text-blue-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                  className="px-5 py-2.5 bg-white text-primary-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
                 >
                   <Lock size={18} /> Request Admin Permission
                 </button>
@@ -262,7 +262,7 @@ const DashboardHome = () => {
                  <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl font-medium transition-all border border-white/10">
                    View Schedule
                  </button>
-                 <button className="px-5 py-2.5 bg-white text-blue-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">
+                 <button className="px-5 py-2.5 bg-white text-primary-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">
                    Start Rounds
                  </button>
                </>
@@ -297,7 +297,7 @@ const DashboardHome = () => {
           <WidgetCard className="relative overflow-hidden text-center group">
             <div className="absolute top-0 left-0 w-full h-24 bg-blue-50/50 dark:bg-slate-700/50"></div>
             <div className="relative z-10 inline-block">
-              <div className="p-1 mx-auto bg-white rounded-full shadow-md w-28 h-28 dark:bg-slate-800 ring-1 ring-blue-200 dark:ring-slate-700">
+              <div className="p-1 mx-auto bg-white rounded-full shadow-md w-28 h-28 dark:bg-slate-900 ring-1 ring-primary-200 dark:ring-slate-700">
                 <img
                   src={
                     user.imageUrl ||
@@ -313,7 +313,7 @@ const DashboardHome = () => {
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                 {user.name}
               </h2>
-              <span className="inline-block px-3 py-1 mt-2 text-xs font-bold tracking-wide text-blue-700 uppercase bg-blue-100 border border-blue-200 rounded-full dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800">
+              <span className="inline-block px-3 py-1 mt-2 text-xs font-bold tracking-wide text-primary-700 uppercase bg-primary-100 border border-primary-200 rounded-full dark:bg-primary-900/50 dark:text-primary-300 dark:border-primary-800">
                 {user.role}
               </span>
               <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
@@ -365,14 +365,14 @@ const DashboardHome = () => {
                 </div>
                 <div className="flex items-center justify-between p-3 border bg-slate-50 dark:bg-slate-900/50 rounded-xl border-slate-100 dark:border-slate-700">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 text-blue-600 bg-blue-100 rounded-lg">
+                    <div className="p-2 text-primary-600 bg-primary-100 dark:bg-primary-900/30 dark:text-primary-400 rounded-lg">
                       <Activity size={18} />
                     </div>
                     <span className="font-medium text-slate-700 dark:text-slate-300">
                       System Load
                     </span>
                   </div>
-                  <span className="font-bold text-blue-600">Normal</span>
+                  <span className="font-bold text-primary-600 dark:text-primary-400">Normal</span>
                 </div>
               </div>
             </WidgetCard>
@@ -386,12 +386,12 @@ const DashboardHome = () => {
             <WidgetCard>
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
                 <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                  <Clock size={20} className="text-blue-500" /> Live Activity
+                  <Clock size={20} className="text-primary-500" /> Live Activity
                   Feed
                 </h3>
                 <button
                   onClick={() => navigate("/admin/logs")}
-                  className="text-sm font-medium text-blue-600 hover:underline"
+                  className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline"
                 >
                   View All
                 </button>
@@ -451,7 +451,7 @@ const DashboardHome = () => {
             <WidgetCard>
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
                 <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                  <Users size={20} className="text-blue-500" />
+                  <Users size={20} className="text-primary-500" />
                   {role === "Doctor" ? "Doctors On Call" : "Nurses On Duty"}
                 </h3>
                 <span className="px-2.5 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-bold flex items-center gap-1">
@@ -464,7 +464,7 @@ const DashboardHome = () => {
                   staffList.map((staff, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border-slate-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 group"
+                      className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 border-slate-100 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-800 group"
                     >
                       <div className="relative">
                         <img
@@ -478,7 +478,7 @@ const DashboardHome = () => {
                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full dark:border-slate-800"></div>
                       </div>
                       <div>
-                        <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-blue-600">
+                        <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400">
                           {staff.name}
                         </p>
                         <p className="text-xs font-medium text-slate-500">

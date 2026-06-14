@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { UserPlus, Mail, Lock, Shield, Image } from "lucide-react";
-import Notification from "../../components/Notification"; // Import Notification
+import React, { useState, useRef } from "react";
+import { UserPlus, Mail, Lock, Shield, Upload, Camera, X } from "lucide-react";
+import Notification from "../../components/Notification";
 import { AnimatePresence } from "framer-motion";
 
 const UserManagement = () => {
@@ -14,11 +14,38 @@ const UserManagement = () => {
     imageUrl: "",
   });
 
-  // Replaced 'message' string with 'notification' object
   const [notification, setNotification] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setNotification({
+        type: "warning",
+        title: "File Too Large",
+        message: "Please select an image under 5MB.",
+      });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result);
+      setFormData({ ...formData, imageUrl: reader.result });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setImagePreview(null);
+    setFormData({ ...formData, imageUrl: "" });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,7 +58,6 @@ const UserManagement = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Show Success Toast
         setNotification({
           type: "success",
           title: "User Created",
@@ -46,8 +72,9 @@ const UserManagement = () => {
           ward: "",
           imageUrl: "",
         });
+        setImagePreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
       } else {
-        // Show Error Toast
         setNotification({
           type: "error",
           title: "Registration Failed",
@@ -63,6 +90,11 @@ const UserManagement = () => {
     }
   };
 
+  const inputClass =
+    "w-full px-4 py-3 text-sm transition-all border outline-none rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-primary-500 dark:text-white placeholder-slate-400 dark:placeholder-slate-500";
+  const inputWithIconClass =
+    "w-full py-3 pr-4 pl-11 text-sm transition-all border outline-none rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-primary-500 dark:text-white placeholder-slate-400 dark:placeholder-slate-500";
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
@@ -74,161 +106,193 @@ const UserManagement = () => {
         </p>
       </div>
 
-      <div className="p-8 bg-white border border-blue-300 shadow-sm dark:bg-slate-800 rounded-2xl dark:border-blue-700 shadow-blue-200/50 dark:shadow-blue-900/20">
-        <div className="flex items-center gap-3 pb-6 mb-6 border-b border-slate-100 dark:border-slate-700">
-          <div className="p-3 text-blue-600 bg-blue-100 rounded-xl">
+      <div className="p-8 bg-white/80 backdrop-blur-md border shadow-soft dark:bg-slate-900/80 rounded-3xl border-slate-200/60 dark:border-slate-700/60">
+        <div className="flex items-center gap-3 pb-6 mb-6 border-b border-slate-100 dark:border-slate-800">
+          <div className="p-3 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-xl border border-primary-100 dark:border-primary-800/50">
             <UserPlus size={24} />
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
               Register New Staff
             </h2>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Add a new Doctor, Nurse, or Admin to the system.
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Row 1: Photo upload + Name/Email */}
+          <div className="flex flex-col items-start gap-8 md:flex-row">
+            {/* Photo Upload */}
+            <div className="flex flex-col items-center space-y-3 shrink-0">
+              <div
+                className="relative w-28 h-28 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-slate-50 dark:border-slate-700 shadow-sm overflow-hidden cursor-pointer group"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center w-full h-full text-slate-300 dark:text-slate-600">
+                    <Camera size={28} />
+                  </div>
+                )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Upload size={22} className="text-white" />
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+              {imagePreview ? (
+                <button
+                  type="button"
+                  onClick={clearImage}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg transition-colors"
+                >
+                  <X size={12} /> Remove
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 text-xs font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 rounded-lg transition-colors"
+                >
+                  Upload Photo
+                </button>
+              )}
+            </div>
+
+            {/* Name + Email */}
+            <div className="flex-1 w-full space-y-5">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Dr. John Doe"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    className={inputClass}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail
+                      className="absolute -translate-y-1/2 left-4 top-1/2 text-slate-400 dark:text-slate-500"
+                      size={18}
+                    />
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="john@medvault.com"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      className={inputWithIconClass}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock
+                      className="absolute -translate-y-1/2 left-4 top-1/2 text-slate-400 dark:text-slate-500"
+                      size={18}
+                    />
+                    <input
+                      type="password"
+                      name="password"
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      className={inputWithIconClass}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Role
+                  </label>
+                  <div className="relative">
+                    <Shield
+                      className="absolute -translate-y-1/2 left-4 top-1/2 text-slate-400 dark:text-slate-500"
+                      size={18}
+                    />
+                    <select
+                      name="role"
+                      value={formData.role}
+                      onChange={handleChange}
+                      className={inputWithIconClass + " appearance-none cursor-pointer"}
+                    >
+                      <option value="Doctor">Doctor</option>
+                      <option value="Nurse">Nurse</option>
+                      <option value="Admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: Specialty / Ward */}
+          {formData.role === "Doctor" && (
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                Full Name
+                Specialty
               </label>
               <input
                 type="text"
-                name="name"
-                placeholder="Dr. John Doe"
-                value={formData.name}
+                name="specialty"
+                placeholder="e.g. Cardiology"
+                value={formData.specialty}
                 onChange={handleChange}
-                required
-                className="w-full px-4 py-3 transition-all border outline-none rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
+                className={inputClass}
               />
             </div>
+          )}
+
+          {formData.role === "Nurse" && (
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                Email Address
+                Assigned Ward
               </label>
-              <div className="relative">
-                <Mail
-                  className="absolute -translate-y-1/2 left-4 top-1/2 text-slate-400"
-                  size={18}
-                />
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="john@medvault.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full py-3 pr-4 transition-all border outline-none pl-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+              <input
+                type="text"
+                name="ward"
+                placeholder="e.g. ICU - Wing A"
+                value={formData.ward}
+                onChange={handleChange}
+                className={inputClass}
+              />
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                Password
-              </label>
-              <div className="relative">
-                <Lock
-                  className="absolute -translate-y-1/2 left-4 top-1/2 text-slate-400"
-                  size={18}
-                />
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="w-full py-3 pr-4 transition-all border outline-none pl-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                Role
-              </label>
-              <div className="relative">
-                <Shield
-                  className="absolute -translate-y-1/2 left-4 top-1/2 text-slate-400"
-                  size={18}
-                />
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full py-3 pr-4 transition-all border outline-none appearance-none cursor-pointer pl-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="Doctor">Doctor</option>
-                  <option value="Nurse">Nurse</option>
-                  <option value="Admin">Admin</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                Profile Image URL (Optional)
-              </label>
-              <div className="relative">
-                <Image
-                  className="absolute -translate-y-1/2 left-4 top-1/2 text-slate-400"
-                  size={18}
-                />
-                <input
-                  type="text"
-                  name="imageUrl"
-                  placeholder="https://..."
-                  value={formData.imageUrl}
-                  onChange={handleChange}
-                  className="w-full py-3 pr-4 transition-all border outline-none pl-11 rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            {formData.role === "Doctor" && (
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                  Specialty
-                </label>
-                <input
-                  type="text"
-                  name="specialty"
-                  placeholder="e.g. Cardiology"
-                  value={formData.specialty}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 transition-all border outline-none rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            )}
-
-            {formData.role === "Nurse" && (
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                  Assigned Ward
-                </label>
-                <input
-                  type="text"
-                  name="ward"
-                  placeholder="e.g. ICU - Wing A"
-                  value={formData.ward}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 transition-all border outline-none rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            )}
-          </div>
+          )}
 
           <div className="pt-4">
             <button
               type="submit"
-              className="w-full py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5"
+              className="w-full py-4 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-bold shadow-lg shadow-primary-600/20 transition-all hover:-translate-y-0.5"
             >
               Create User Account
             </button>

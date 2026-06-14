@@ -161,10 +161,10 @@ const SystemSettings = () => {
 
       <div className="grid grid-cols-1 gap-6">
         {/* Password Policy Card */}
-        <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
+        <div className="p-6 bg-white/80 backdrop-blur-md border shadow-soft dark:bg-slate-800/80 rounded-3xl border-slate-200/60 dark:border-slate-700/60">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-blue-100 rounded-lg dark:bg-blue-900/30">
-              <Shield className="text-blue-600 dark:text-blue-400" size={24} />
+            <div className="p-2 bg-primary-100 rounded-xl dark:bg-primary-900/30 border border-primary-200/50 dark:border-primary-800/50">
+              <Shield className="text-primary-600 dark:text-primary-400" size={24} />
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -190,7 +190,7 @@ const SystemSettings = () => {
                 onChange={handleChange}
                 min="6"
                 max="32"
-                className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
               />
               <p className="text-xs text-slate-400">
                 Current: {policies.minPasswordLength} characters minimum
@@ -204,7 +204,7 @@ const SystemSettings = () => {
                 name="requireSpecialChars"
                 checked={policies.requireSpecialChars}
                 onChange={handleChange}
-                className="w-5 h-5 mt-0.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-5 h-5 mt-0.5 text-primary-600 border-gray-300 rounded focus:ring-primary-500 cursor-pointer"
               />
               <label
                 htmlFor="requireSpecialChars"
@@ -220,9 +220,9 @@ const SystemSettings = () => {
         </div>
 
         {/* Access Control Card */}
-        <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
+        <div className="p-6 bg-white/80 backdrop-blur-md border shadow-soft dark:bg-slate-800/80 rounded-3xl border-slate-200/60 dark:border-slate-700/60">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-purple-100 rounded-lg dark:bg-purple-900/30">
+            <div className="p-2 bg-purple-100 rounded-xl dark:bg-purple-900/30 border border-purple-200/50 dark:border-purple-800/50">
               <Clock className="text-purple-600 dark:text-purple-400" size={24} />
             </div>
             <div>
@@ -247,7 +247,7 @@ const SystemSettings = () => {
                 value={policies.sessionTimeout}
                 onChange={handleChange}
                 min="1"
-                className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
               />
               <p className="text-xs text-slate-400">{policies.sessionTimeout} minutes</p>
             </div>
@@ -263,7 +263,7 @@ const SystemSettings = () => {
                 onChange={handleChange}
                 min="1"
                 max="10"
-                className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
               />
               <p className="text-xs text-slate-400">
                 Account locks after {policies.maxLoginAttempts} failures
@@ -280,7 +280,7 @@ const SystemSettings = () => {
                 value={policies.accountLockoutDuration}
                 onChange={handleChange}
                 min="5"
-                className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
               />
               <p className="text-xs text-slate-400">{policies.accountLockoutDuration} minutes</p>
             </div>
@@ -340,7 +340,7 @@ const SystemSettings = () => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-8 py-3 font-bold text-white transition-all bg-blue-600 shadow-lg hover:bg-blue-700 rounded-xl shadow-blue-500/30 disabled:opacity-60"
+            className="flex items-center gap-2 px-8 py-3.5 font-bold text-white transition-all bg-primary-600 shadow-lg hover:bg-primary-700 rounded-2xl shadow-primary-500/30 disabled:opacity-60"
           >
             {saving ? (
               <RefreshCw size={20} className="animate-spin" />

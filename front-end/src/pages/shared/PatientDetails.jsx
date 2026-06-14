@@ -187,7 +187,7 @@ const PatientDetails = () => {
       </button>
 
       {/* ── Main Profile Header ── */}
-      <div className="relative p-8 overflow-hidden bg-white border border-blue-200 shadow-xl dark:bg-slate-800 rounded-3xl dark:border-slate-700 shadow-blue-900/5">
+      <div className="relative p-8 overflow-hidden bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-soft dark:bg-slate-800/80 rounded-3xl dark:border-slate-700/60">
         <div className="absolute top-0 right-0 p-6 opacity-10">
           <Activity size={120} />
         </div>
@@ -208,7 +208,7 @@ const PatientDetails = () => {
                   {patient.name}
                 </h1>
                 <p className="flex items-center gap-2 mt-1 text-slate-500 dark:text-slate-400">
-                  <Shield size={16} className="text-blue-500" /> Patient ID:{" "}
+                  <Shield size={16} className="text-primary-500" /> Patient ID:{" "}
                   <span className="font-mono">{patient._id}</span>
                 </p>
               </div>
@@ -265,9 +265,9 @@ const PatientDetails = () => {
                 <span className="block mb-1 text-xs font-bold uppercase text-slate-400">Ward</span>
                 <span className="text-xl font-bold text-slate-800 dark:text-white">{patient.ward}</span>
               </div>
-              <div className="col-span-2 p-4 border bg-slate-50 dark:bg-slate-900/50 rounded-2xl border-slate-100 dark:border-slate-700">
+              <div className="col-span-2 p-4 border bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border-slate-100 dark:border-slate-700/50">
                 <span className="block mb-1 text-xs font-bold uppercase text-slate-400">Condition</span>
-                <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{patient.disease}</span>
+                <span className="text-xl font-bold text-primary-600 dark:text-primary-400">{patient.disease}</span>
               </div>
             </div>
           </div>
@@ -280,7 +280,7 @@ const PatientDetails = () => {
         {/* Left Column: Vitals + Contact */}
         <div className="space-y-6 md:col-span-1">
           {/* Vitals */}
-          <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
+          <div className="p-6 bg-white/80 backdrop-blur-md border shadow-soft dark:bg-slate-800/80 rounded-3xl border-slate-200/60 dark:border-slate-700/60">
             <h3 className="flex items-center gap-2 mb-4 text-lg font-bold text-slate-900 dark:text-white">
               <Activity className="text-red-500" size={20} /> Current Vitals
             </h3>
@@ -295,9 +295,9 @@ const PatientDetails = () => {
           </div>
 
           {/* Contact Info */}
-          <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
+          <div className="p-6 bg-white/80 backdrop-blur-md border shadow-soft dark:bg-slate-800/80 rounded-3xl border-slate-200/60 dark:border-slate-700/60">
             <h3 className="flex items-center gap-2 mb-4 text-lg font-bold text-slate-900 dark:text-white">
-              <User className="text-blue-500" size={20} /> Contact Info
+              <User className="text-primary-500" size={20} /> Contact Info
             </h3>
             <div className="space-y-3">
               {[
@@ -319,10 +319,10 @@ const PatientDetails = () => {
         <div className="space-y-6 md:col-span-2">
 
           {/* ── Medical History ── */}
-          <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
+          <div className="p-6 bg-white/80 backdrop-blur-md border shadow-soft dark:bg-slate-800/80 rounded-3xl border-slate-200/60 dark:border-slate-700/60">
             <div className="flex items-center justify-between mb-4">
               <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                <FileText className="text-blue-500" size={20} /> Medical History
+                <FileText className="text-primary-500" size={20} /> Medical History
               </h3>
               {isDoctor && !editingHistory && (
                 <button
@@ -330,7 +330,7 @@ const PatientDetails = () => {
                     setHistoryDraft(patient.medicalHistory || "");
                     setEditingHistory(true);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/40 rounded-lg transition-colors"
                 >
                   <Edit3 size={13} /> Edit
                 </button>
@@ -345,7 +345,7 @@ const PatientDetails = () => {
             {editingHistory ? (
               <div className="space-y-3">
                 <textarea
-                  className="w-full px-4 py-3 rounded-xl border border-blue-300 bg-blue-50/30 dark:bg-slate-900 dark:border-blue-700 dark:text-white text-slate-800 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-4 py-3 rounded-xl border border-primary-300 bg-primary-50/30 dark:bg-slate-900 dark:border-primary-700 dark:text-white text-slate-800 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                   rows={6}
                   value={historyDraft}
                   onChange={(e) => setHistoryDraft(e.target.value)}
@@ -361,7 +361,7 @@ const PatientDetails = () => {
                   </button>
                   <button
                     onClick={saveHistory}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md shadow-blue-500/20 transition-colors"
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-md shadow-primary-500/20 transition-colors"
                   >
                     <Check size={15} /> Save Changes
                   </button>
@@ -388,7 +388,7 @@ const PatientDetails = () => {
           </div>
 
           {/* ── Treatment Timeline ── */}
-          <div className="p-6 bg-white border shadow-sm dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700">
+          <div className="p-6 bg-white/80 backdrop-blur-md border shadow-soft dark:bg-slate-800/80 rounded-3xl border-slate-200/60 dark:border-slate-700/60">
             <div className="flex items-center justify-between mb-5">
               <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
                 <Clock className="text-purple-500" size={20} /> Treatment Timeline

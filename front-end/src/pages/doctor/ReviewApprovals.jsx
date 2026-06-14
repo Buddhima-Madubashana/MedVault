@@ -65,7 +65,7 @@ const ReviewApprovals = () => {
             Manage admission and discharge requests.
           </p>
         </div>
-        <div className="px-4 py-2 text-sm font-bold text-blue-700 border border-blue-100 bg-blue-50 rounded-xl">
+        <div className="px-4 py-2 text-sm font-bold text-primary-700 dark:text-primary-300 border border-primary-100 dark:border-primary-800/50 bg-primary-50 dark:bg-primary-900/20 rounded-xl">
           {requests.length} Pending
         </div>
       </div>
@@ -83,17 +83,17 @@ const ReviewApprovals = () => {
           return (
             <div
               key={req._id}
-              className={`p-6 rounded-2xl border shadow-sm flex flex-col md:flex-row items-center gap-6 ${isDelete ? "bg-red-50/50 border-red-200" : "bg-white border-blue-200"}`}
+              className={`p-6 rounded-2xl border shadow-soft flex flex-col md:flex-row items-center gap-6 ${isDelete ? "bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-800/50" : "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-slate-200/60 dark:border-slate-700/60"}`}
             >
               <div
-                className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDelete ? "bg-red-100 text-red-600" : "bg-blue-100 text-blue-600"}`}
+                className={`w-16 h-16 rounded-2xl flex items-center justify-center ${isDelete ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" : "bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"}`}
               >
                 {isDelete ? <Trash2 size={28} /> : <UserPlus size={28} />}
               </div>
 
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center justify-center gap-2 md:justify-start">
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
                     {patientName}
                   </h3>
                   <span
@@ -102,8 +102,8 @@ const ReviewApprovals = () => {
                     {req.requestType} Request
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-slate-500">{details}</p>
-                <p className="mt-2 text-xs font-medium text-slate-400">
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{details}</p>
+                <p className="mt-2 text-xs font-medium text-slate-400 dark:text-slate-500">
                   Requested by Nurse {req.nurseId?.name}
                 </p>
               </div>
@@ -111,13 +111,13 @@ const ReviewApprovals = () => {
               <div className="flex w-full gap-3 md:w-auto">
                 <button
                   onClick={() => handleAction(req._id, "reject")}
-                  className="flex-1 px-6 py-2 font-medium border md:flex-none rounded-xl border-slate-300 text-slate-600 hover:bg-slate-50"
+                  className="flex-1 px-6 py-2 font-medium border md:flex-none rounded-xl border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   Reject
                 </button>
                 <button
                   onClick={() => handleAction(req._id, "approve")}
-                  className={`flex-1 md:flex-none px-6 py-2 rounded-xl text-white font-bold shadow-lg transition-all flex items-center justify-center gap-2 ${isDelete ? "bg-red-600 hover:bg-red-700 shadow-red-200" : "bg-blue-600 hover:bg-blue-700 shadow-blue-200"}`}
+                  className={`flex-1 md:flex-none px-6 py-2 rounded-xl text-white font-bold shadow-lg transition-all flex items-center justify-center gap-2 ${isDelete ? "bg-red-600 hover:bg-red-700 shadow-red-200 dark:shadow-red-900/30" : "bg-primary-600 hover:bg-primary-700 shadow-primary-200 dark:shadow-primary-900/30"}`}
                 >
                   <Check size={18} />{" "}
                   {isDelete ? "Confirm Delete" : "Approve Add"}
@@ -127,7 +127,7 @@ const ReviewApprovals = () => {
           );
         })}
         {requests.length === 0 && (
-          <p className="py-10 text-center text-slate-500">
+          <p className="py-10 text-center text-slate-500 dark:text-slate-400">
             No pending requests.
           </p>
         )}
