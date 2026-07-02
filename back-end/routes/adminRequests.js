@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const AdminRequest = require("../models/AdminRequest");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 const { logAction } = require("../utils/logger");
 const authMiddleware = require("../middleware/authMiddleware");
 
@@ -39,6 +40,17 @@ router.post("/", authMiddleware, async (req, res) => {
     
     // Simple log
     console.log(`User ${req.user._id} requested admin permission from ${admin.name}`);
+
+    // Notify the target Admin
+    const requester = await User.findById(req.user._id);
+    await Notification.create({
+      recipientId: adminId,
+      type: "Admin Permission Request",
+      title: "New Admin Request",
+      message: `Dr. ${requester.name} requested temporary admin access.`,
+      link: "/admin/requests",
+      icon: "shield"
+    });
 
     res.status(201).json(newRequest);
   } catch (err) {
@@ -119,6 +131,16 @@ router.put("/:id/approve", authMiddleware, async (req, res) => {
     const requesterName = requesterUser ? requesterUser.name : request.requester;
     await logAction(actor, "ADMIN_GRANT", `Granted temporary admin access to doctor ${requesterName}`, req);
 
+    // Notify the Doctor
+    await Notification.create({
+      recipientId: request.requester,
+      type: "Permission Granted",
+      title: "Admin Access Approved",
+      message: `Admin ${actor.name} granted you temporary admin access.`,
+      link: "/doctor/dashboard",
+      icon: "check"
+    });
+
     res.json({ message: "Permission granted", request });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -137,6 +159,17 @@ router.put("/:id/reject", authMiddleware, async (req, res) => {
 
     request.status = "Rejected";
     await request.save();
+
+    // Notify the Doctor
+    const actor = await User.findById(req.user._id);
+    await Notification.create({
+      recipientId: request.requester,
+      type: "Permission Denied",
+      title: "Admin Access Rejected",
+      message: `Admin ${actor.name} rejected your admin access request.`,
+      link: "/doctor/dashboard",
+      icon: "x"
+    });
 
     res.json({ message: "Request rejected", request });
   } catch (err) {
@@ -176,6 +209,16 @@ router.put("/:id/revoke", authMiddleware, async (req, res) => {
     const requesterUser = await User.findById(request.requester);
     const requesterName = requesterUser ? requesterUser.name : request.requester;
     await logAction(admin, "ADMIN_REVOKE", `Revoked temporary admin access for doctor ${requesterName}`, req);
+
+    // Notify the Doctor
+    await Notification.create({
+      recipientId: request.requester,
+      type: "Permission Revoked",
+      title: "Admin Access Revoked",
+      message: `Admin ${admin.name} revoked your temporary admin access.`,
+      link: "/doctor/dashboard",
+      icon: "alert"
+    });
 
     res.json({ message: "Permission revoked" });
   } catch (err) {

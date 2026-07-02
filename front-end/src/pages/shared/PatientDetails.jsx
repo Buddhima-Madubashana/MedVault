@@ -44,6 +44,7 @@ const PatientDetails = () => {
   const { token, role, user } = useAuth();
   const navigate = useNavigate();
   const isDoctor = role === "Doctor" || role === "Admin";
+  const canEditVitals = role === "Doctor" || role === "Admin" || role === "Nurse";
 
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +64,11 @@ const PatientDetails = () => {
   const [newTimelineEvent, setNewTimelineEvent] = useState("");
   const [savingTimeline, setSavingTimeline] = useState(false);
 
+  // --- Vitals edit state ---
+  const [editingVitals, setEditingVitals] = useState(false);
+  const [vitalsDraft, setVitalsDraft] = useState({ heartRate: "", bloodPressure: "", temperature: "" });
+  const [savingVitals, setSavingVitals] = useState(false);
+
   const showNotification = (type, title, msg) =>
     setNotification({ type, title, message: msg, duration: 3000 });
 
@@ -80,6 +86,7 @@ const PatientDetails = () => {
         setPatient(data);
         setHistoryDraft(data.medicalHistory || "");
         setStatusDraft(data.status || "Stable");
+        setVitalsDraft(data.vitals || { heartRate: "72 bpm", bloodPressure: "120/80", temperature: "98.6 °F" });
         setLoading(false);
       })
       .catch((err) => {
@@ -161,6 +168,21 @@ const PatientDetails = () => {
       showNotification("error", "Error", err.message);
     } finally {
       setSavingTimeline(false);
+    }
+  };
+
+  // --- Save Vitals ---
+  const saveVitals = async () => {
+    setSavingVitals(true);
+    try {
+      const updated = await patchPatient({ vitals: vitalsDraft });
+      setPatient(updated);
+      setEditingVitals(false);
+      showNotification("success", "Updated", "Vitals updated successfully.");
+    } catch (err) {
+      showNotification("error", "Error", err.message);
+    } finally {
+      setSavingVitals(false);
     }
   };
 
@@ -281,17 +303,61 @@ const PatientDetails = () => {
         <div className="space-y-6 md:col-span-1">
           {/* Vitals */}
           <div className="p-6 bg-white/80 backdrop-blur-md border shadow-soft dark:bg-slate-800/80 rounded-3xl border-slate-200/60 dark:border-slate-700/60">
-            <h3 className="flex items-center gap-2 mb-4 text-lg font-bold text-slate-900 dark:text-white">
-              <Activity className="text-red-500" size={20} /> Current Vitals
-            </h3>
-            <div className="space-y-4">
-              {[["Heart Rate", "72 bpm"], ["Blood Pressure", "120/80"], ["Temperature", "98.6 °F"]].map(([label, val]) => (
-                <div key={label} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
-                  <span className="text-sm font-medium text-slate-500">{label}</span>
-                  <span className="text-lg font-bold text-slate-900 dark:text-white">{val}</span>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                <Activity className="text-red-500" size={20} /> Current Vitals
+              </h3>
+              {canEditVitals && !editingVitals && (
+                <button
+                  onClick={() => {
+                    setVitalsDraft(patient.vitals || { heartRate: "72 bpm", bloodPressure: "120/80", temperature: "98.6 °F" });
+                    setEditingVitals(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg transition-colors"
+                >
+                  <Edit3 size={13} /> Edit
+                </button>
+              )}
             </div>
+            {editingVitals ? (
+              <div className="space-y-3">
+                {[["Heart Rate", "heartRate"], ["Blood Pressure", "bloodPressure"], ["Temperature", "temperature"]].map(([label, key]) => (
+                  <div key={key} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                    <span className="text-sm font-medium text-slate-500">{label}</span>
+                    <input
+                      type="text"
+                      value={vitalsDraft[key] || ""}
+                      onChange={(e) => setVitalsDraft({ ...vitalsDraft, [key]: e.target.value })}
+                      className="w-32 px-3 py-1.5 text-sm font-bold text-right bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-red-400 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                ))}
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    onClick={() => setEditingVitals(false)}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors"
+                  >
+                    <X size={15} /> Cancel
+                  </button>
+                  <button
+                    onClick={saveVitals}
+                    disabled={savingVitals}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-md shadow-red-500/20 transition-colors disabled:opacity-50"
+                  >
+                    {savingVitals ? "Saving..." : <><Check size={15} /> Save</>}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {[["Heart Rate", patient.vitals?.heartRate || "72 bpm"], ["Blood Pressure", patient.vitals?.bloodPressure || "120/80"], ["Temperature", patient.vitals?.temperature || "98.6 °F"]].map(([label, val]) => (
+                  <div key={label} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
+                    <span className="text-sm font-medium text-slate-500">{label}</span>
+                    <span className="text-lg font-bold text-slate-900 dark:text-white">{val}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Contact Info */}
@@ -377,7 +443,7 @@ const PatientDetails = () => {
                     Requires monitoring and standard treatment protocol.
                     {"\n\n"}
                     <strong className="not-italic text-slate-600 dark:text-slate-300">Admitted By:</strong>{" "}
-                    {patient.approvedBy ? `Dr. ID: ${patient.approvedBy}` : "System Admin"}
+                    {patient.approvedBy?.name ? `Dr. ${patient.approvedBy.name}` : "System Admin"}
                     {"\n"}
                     <strong className="not-italic text-slate-600 dark:text-slate-300">Admission Date:</strong>{" "}
                     {new Date(patient.createdAt).toLocaleDateString()}
@@ -432,7 +498,7 @@ const PatientDetails = () => {
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-slate-400 flex items-center gap-1">
                         <Stethoscope size={12} />
-                        Will be signed as <strong className="text-slate-600 dark:text-slate-300">Dr. {user?.name}</strong> · {new Date().toLocaleDateString()}
+                        Will be signed as <strong className="text-slate-600 dark:text-slate-300">{role === "Admin" ? "Admin" : "Dr."} {user?.name}</strong> · {new Date().toLocaleDateString()}
                       </p>
                       <div className="flex gap-2">
                         <button
@@ -489,7 +555,7 @@ const PatientDetails = () => {
                       </p>
                       {entry.doctorName && (
                         <span className="flex items-center gap-1 text-xs font-semibold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-full">
-                          <Stethoscope size={10} /> Dr. {entry.doctorName}
+                          <Stethoscope size={10} /> {entry.doctorRole === "Nurse" ? "Nurse" : entry.doctorRole === "Admin" ? "Admin" : "Dr."} {entry.doctorName}
                         </span>
                       )}
                     </div>

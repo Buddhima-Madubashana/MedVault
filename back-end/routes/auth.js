@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 const SystemSettings = require("../models/SystemSettings");
 const { logAction } = require("../utils/logger");
 
@@ -65,6 +66,20 @@ router.post("/login", async (req, res) => {
             `Account locked due to ${settings.maxLoginAttempts} failed login attempts`,
             req,
           );
+          
+          // Notify ALL Admins
+          const admins = await User.find({ role: "Admin" });
+          for (const admin of admins) {
+            await Notification.create({
+              recipientId: admin._id,
+              type: "Account Locked",
+              title: "Security Alert",
+              message: `User ${user.name} (${user.role}) was locked out after ${settings.maxLoginAttempts} failed login attempts.`,
+              link: "/admin/locked",
+              icon: "lock"
+            });
+          }
+
           return res
             .status(403)
             .json({ message: "Account Locked: Max attempts reached." });
@@ -90,8 +105,9 @@ router.post("/login", async (req, res) => {
     if (user.failedLoginAttempts > 0) {
       user.failedLoginAttempts = 0;
       user.isLocked = false;
-      await user.save();
     }
+    user.lastLoginAt = new Date();
+    await user.save();
 
     // SESSION EXPIRY: Admins get 24h, others get sessionTimeout minutes from settings
     const sessionMinutes = settings.sessionTimeout || 60;

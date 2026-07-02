@@ -3,6 +3,7 @@ const router = express.Router();
 const PatientRequest = require("../models/PatientRequest");
 const Patient = require("../models/Patient");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 const { logAction } = require("../utils/logger");
 
 // Create Request
@@ -22,6 +23,16 @@ router.post("/", async (req, res) => {
         `Requested ${type} for: ${req.body.name}`,
         req,
       );
+      
+      // Notify the Doctor
+      await Notification.create({
+        recipientId: req.body.doctorId,
+        type: `${type} Request`,
+        title: `New ${type} Request`,
+        message: `Nurse ${nurse.name} sent a request for ${req.body.name}`,
+        link: "/doctor/reviews",
+        icon: req.body.requestType === "Delete" ? "trash" : "userplus"
+      });
     }
 
     res.status(201).json(newRequest);
@@ -63,13 +74,23 @@ router.post("/:id/approve", async (req, res) => {
       await PatientRequest.findByIdAndDelete(req.params.id);
 
       // Log
-      if (doctor)
+      if (doctor) {
         await logAction(
           doctor,
           "REQUEST_DISCHARGE_APPROVED",
           `Approved discharge for: ${request.name}`,
           req,
         );
+        // Notify the Nurse
+        await Notification.create({
+          recipientId: request.nurseId,
+          type: "Request Approved",
+          title: "Discharge Approved",
+          message: `Dr. ${doctor.name} approved discharge for ${request.name}`,
+          link: "/nurse/approvals",
+          icon: "check"
+        });
+      }
       res.status(200).json({ message: "Discharge approved" });
     } else {
       const newPatient = new Patient({
@@ -88,13 +109,23 @@ router.post("/:id/approve", async (req, res) => {
       await PatientRequest.findByIdAndDelete(req.params.id);
 
       // Log
-      if (doctor)
+      if (doctor) {
         await logAction(
           doctor,
           "REQUEST_ADMISSION_APPROVED",
           `Approved admission for: ${request.name}`,
           req,
         );
+        // Notify the Nurse
+        await Notification.create({
+          recipientId: request.nurseId,
+          type: "Request Approved",
+          title: "Admission Approved",
+          message: `Dr. ${doctor.name} approved admission for ${request.name}`,
+          link: "/nurse/approvals",
+          icon: "check"
+        });
+      }
       res.status(200).json({ message: "Admission approved" });
     }
   } catch (err) {
@@ -110,13 +141,23 @@ router.delete("/:id", async (req, res) => {
 
     if (request && actionBy) {
       const doctor = await User.findById(actionBy);
-      if (doctor)
+      if (doctor) {
         await logAction(
           doctor,
           "REQUEST_REJECTED",
           `Rejected request for: ${request.name}`,
           req,
         );
+        // Notify the Nurse
+        await Notification.create({
+          recipientId: request.nurseId,
+          type: "Request Rejected",
+          title: "Request Rejected",
+          message: `Dr. ${doctor.name} rejected your request for ${request.name}`,
+          link: "/nurse/approvals",
+          icon: "x"
+        });
+      }
     }
 
     res.json({ message: "Request rejected" });

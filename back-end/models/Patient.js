@@ -7,6 +7,7 @@ const timelineEntrySchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
   doctorId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   doctorName: { type: String },
+  doctorRole: { type: String },
 });
 
 const patientSchema = new mongoose.Schema(
@@ -26,6 +27,13 @@ const patientSchema = new mongoose.Schema(
 
     // Editable medical history notes
     medicalHistory: { type: String, default: "" },
+
+    // Current vitals (editable by Doctor and Nurse)
+    vitals: {
+      heartRate: { type: String, default: "72 bpm" },
+      bloodPressure: { type: String, default: "120/80" },
+      temperature: { type: String, default: "98.6 °F" },
+    },
 
     // Treatment timeline entries added by doctors
     treatmentTimeline: [timelineEntrySchema],

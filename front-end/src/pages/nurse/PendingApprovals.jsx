@@ -14,6 +14,7 @@ const PendingApprovals = () => {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [notification, setNotification] = useState(null);
+  const [expandedReq, setExpandedReq] = useState(null);
 
   // Custom Confirmation Dialog
   const [confirmDialog, setConfirmDialog] = useState({
@@ -87,55 +88,91 @@ const PendingApprovals = () => {
           {requests.map((req) => (
             <div
               key={req._id}
-              className="relative p-6 transition-all bg-white border border-orange-200 shadow-sm dark:bg-slate-800 rounded-2xl dark:border-orange-900/50 hover:shadow-md group"
+              className="relative transition-all bg-white border border-orange-200 shadow-sm dark:bg-slate-800 rounded-2xl dark:border-orange-900/50 hover:shadow-md group overflow-hidden"
             >
-              <div className="flex gap-4 mb-4">
-                <img
-                  src={
-                    req.imageUrl ||
-                    `https://ui-avatars.com/api/?name=${req.name}`
-                  }
-                  className="object-cover w-14 h-14 rounded-2xl ring-2 ring-orange-100"
-                  alt=""
-                />
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                    {req.name}
-                  </h3>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200 mt-1">
-                    <Clock size={12} /> Pending Approval
-                  </span>
+              <div className="p-6">
+                <div className="flex gap-4 mb-4">
+                  <img
+                    src={
+                      req.imageUrl ||
+                      `https://ui-avatars.com/api/?name=${req.name}`
+                    }
+                    className="object-cover w-14 h-14 rounded-2xl ring-2 ring-orange-100"
+                    alt=""
+                  />
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {req.name}
+                    </h3>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200 mt-1">
+                      <Clock size={12} /> Pending Approval
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 mb-4 space-y-2 text-sm border bg-slate-50 dark:bg-slate-900/50 rounded-xl border-slate-100 dark:border-slate-800">
+                  <div className="flex justify-between">
+                    <span className="font-medium text-slate-500">
+                      Assigned Ward
+                    </span>
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {req.ward}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium text-slate-500">Reviewer</span>
+                    <span className="font-bold text-blue-600">
+                      Dr. {req.doctorId?.name || "Unknown"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setExpandedReq(expandedReq === req._id ? null : req._id)}
+                    className="flex items-center justify-center flex-1 gap-2 py-2 text-sm font-medium transition-colors border rounded-xl border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50"
+                  >
+                    <FileText size={16} /> {expandedReq === req._id ? "Hide Details" : "View Details"}
+                  </button>
+                  <button
+                    onClick={() => initiateDelete(req._id, req.name)}
+                    className="p-2 text-red-600 transition-colors border border-red-200 rounded-xl hover:bg-red-50"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               </div>
 
-              <div className="p-3 mb-4 space-y-2 text-sm border bg-slate-50 dark:bg-slate-900/50 rounded-xl border-slate-100 dark:border-slate-800">
-                <div className="flex justify-between">
-                  <span className="font-medium text-slate-500">
-                    Assigned Ward
-                  </span>
-                  <span className="font-bold text-slate-900 dark:text-white">
-                    {req.ward}
-                  </span>
+              {/* Expanded Details Section */}
+              {expandedReq === req._id && (
+                <div className="p-6 bg-slate-50 border-t border-slate-200 dark:bg-slate-900/50 dark:border-slate-700 animate-in slide-in-from-top-4">
+                  <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Patient Details</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-xs font-medium text-slate-500">Age / Ward</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">{req.age} years / {req.ward}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500">Disease</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">{req.disease}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs font-medium text-slate-500">Contact</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{req.phone}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-slate-500">Guardian</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{req.guardianName}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500">Address</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-300">{req.address}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-slate-500">Reviewer</span>
-                  <span className="font-bold text-blue-600">
-                    Dr. {req.doctorId?.name || "Unknown"}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button className="flex items-center justify-center flex-1 gap-2 py-2 text-sm font-medium transition-colors border rounded-xl border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50">
-                  <FileText size={16} /> View Details
-                </button>
-                <button
-                  onClick={() => initiateDelete(req._id, req.name)}
-                  className="p-2 text-red-600 transition-colors border border-red-200 rounded-xl hover:bg-red-50"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
+              )}
             </div>
           ))}
         </div>

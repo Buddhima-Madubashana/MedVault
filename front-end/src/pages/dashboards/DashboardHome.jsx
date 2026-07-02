@@ -36,7 +36,6 @@ const DashboardHome = () => {
   const navigate = useNavigate();
   const greeting = getGreeting();
 
-  const [staffList, setStaffList] = useState([]);
   const [activities, setActivities] = useState([]);
   
   // Admin Request State
@@ -119,13 +118,32 @@ const DashboardHome = () => {
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  // 1. Fetch Staff (Only for Doctors/Nurses)
+  // 1. Fetch Staff (Doctors + Nurses for non-admin roles)
+  const [doctorList, setDoctorList] = useState([]);
+  const [nurseList, setNurseList] = useState([]);
+
+  // Relative time helper
+  const timeAgo = (dateStr) => {
+    if (!dateStr) return "Unknown";
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  };
+
   useEffect(() => {
     if (role === "Doctor" || role === "Nurse") {
-      const endpoint = role === "Doctor" ? "doctors" : "nurses";
-      fetch(`http://localhost:5000/api/users/${endpoint}`)
+      fetch(`http://localhost:5000/api/users/doctors`)
         .then((res) => res.json())
-        .then((data) => setStaffList(data.slice(0, 4)))
+        .then((data) => setDoctorList(data.slice(0, 4)))
+        .catch((err) => console.error(err));
+      fetch(`http://localhost:5000/api/users/nurses`)
+        .then((res) => res.json())
+        .then((data) => setNurseList(data.slice(0, 4)))
         .catch((err) => console.error(err));
     }
   }, [role]);
@@ -238,40 +256,25 @@ const DashboardHome = () => {
             </p>
           </div>
           <div className="flex gap-3">
-            {role === "Doctor" ? (
-              requestStatus === "Approved" ? (
-                 <div className="flex items-center gap-2 px-5 py-2.5 bg-red-500/20 border border-red-200/50 rounded-xl">
-                   <Shield className="animate-pulse text-red-100" />
-                   <span className="font-bold text-red-50">Admin Mode Active</span>
-                 </div>
-              ) : requestStatus === "Pending" ? (
-                 <button disabled className="px-5 py-2.5 bg-yellow-500/50 text-white rounded-xl font-bold cursor-not-allowed border border-white/10">
-                   Request Pending...
+             {role === "Doctor" && (
+               requestStatus === "Approved" ? (
+                  <div className="flex items-center gap-2 px-5 py-2.5 bg-red-500/20 border border-red-200/50 rounded-xl">
+                    <Shield className="animate-pulse text-red-100" />
+                    <span className="font-bold text-red-50">Admin Mode Active</span>
+                  </div>
+               ) : requestStatus === "Pending" ? (
+                  <button disabled className="px-5 py-2.5 bg-yellow-500/50 text-white rounded-xl font-bold cursor-not-allowed border border-white/10">
+                    Request Pending...
+                  </button>
+               ) : (
+                 <button 
+                   onClick={() => setIsRequestModalOpen(true)}
+                   className="px-5 py-2.5 bg-white text-primary-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
+                 >
+                   <Lock size={18} /> Request Admin Permission
                  </button>
-              ) : (
-                <button 
-                  onClick={() => setIsRequestModalOpen(true)}
-                  className="px-5 py-2.5 bg-white text-primary-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2"
-                >
-                  <Lock size={18} /> Request Admin Permission
-                </button>
-              )
-            ) : role === "Nurse" ? (
-               // Keep existing buttons for Nurse
-               <>
-                 <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl font-medium transition-all border border-white/10">
-                   View Schedule
-                 </button>
-                 <button className="px-5 py-2.5 bg-white text-primary-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">
-                   Start Rounds
-                 </button>
-               </>
-            ) : (
-               // Admin Buttons (View Schedule?)
-               <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl font-medium transition-all border border-white/10">
-                  View Schedule
-               </button>
-            )}
+               )
+             )}
             
             {/* Modal */}
             {isRequestModalOpen && (
@@ -446,55 +449,113 @@ const DashboardHome = () => {
             </WidgetCard>
           )}
 
-          {/* Active Staff List (NON-ADMIN ONLY) */}
+          {/* Active Staff Lists (NON-ADMIN ONLY) */}
           {role !== "Admin" && (
-            <WidgetCard>
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
-                <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                  <Users size={20} className="text-primary-500" />
-                  {role === "Doctor" ? "Doctors On Call" : "Nurses On Duty"}
-                </h3>
-                <span className="px-2.5 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-bold flex items-center gap-1">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>{" "}
-                  Live
-                </span>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {staffList.length > 0 ? (
-                  staffList.map((staff, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 border-slate-100 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-800 group"
-                    >
-                      <div className="relative">
-                        <img
-                          src={
-                            staff.imageUrl ||
-                            `https://ui-avatars.com/api/?name=${staff.name}`
-                          }
-                          className="object-cover w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-800"
-                          alt="Staff"
-                        />
-                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full dark:border-slate-800"></div>
+            <>
+              {/* Doctors On Call */}
+              <WidgetCard>
+                <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                    <Users size={20} className="text-primary-500" />
+                    Doctors On Call
+                  </h3>
+                  <span className="px-2.5 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-bold flex items-center gap-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>{" "}
+                    Live
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {doctorList.length > 0 ? (
+                    doctorList.map((staff, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 border-slate-100 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-800 group"
+                      >
+                        <div className="relative">
+                          <img
+                            src={
+                              staff.imageUrl ||
+                              `https://ui-avatars.com/api/?name=${staff.name}`
+                            }
+                            className="object-cover w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-800"
+                            alt="Staff"
+                          />
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full dark:border-slate-800"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 truncate">
+                            {staff.name}
+                          </p>
+                          <p className="text-xs font-medium text-slate-500">
+                            {staff.specialty || "General"}
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                          {timeAgo(staff.lastLoginAt)}
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400">
-                          {staff.name}
-                        </p>
-                        <p className="text-xs font-medium text-slate-500">
-                          {staff.specialty || staff.ward || "General"}
-                        </p>
-                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
+                      <Users size={32} className="mb-2 text-slate-300" />
+                      <p>No doctors found.</p>
                     </div>
-                  ))
-                ) : (
-                  <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
-                    <Users size={32} className="mb-2 text-slate-300" />
-                    <p>No active staff found currently.</p>
-                  </div>
-                )}
-              </div>
-            </WidgetCard>
+                  )}
+                </div>
+              </WidgetCard>
+
+              {/* Nurses On Duty */}
+              <WidgetCard>
+                <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                    <Activity size={20} className="text-pink-500" />
+                    Nurses On Duty
+                  </h3>
+                  <span className="px-2.5 py-1 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 rounded-full text-xs font-bold flex items-center gap-1">
+                    <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>{" "}
+                    Live
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {nurseList.length > 0 ? (
+                    nurseList.map((staff, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-pink-50 dark:hover:bg-pink-900/20 border-slate-100 dark:border-slate-700 hover:border-pink-200 dark:hover:border-pink-800 group"
+                      >
+                        <div className="relative">
+                          <img
+                            src={
+                              staff.imageUrl ||
+                              `https://ui-avatars.com/api/?name=${staff.name}`
+                            }
+                            className="object-cover w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-800"
+                            alt="Staff"
+                          />
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-pink-500 border-2 border-white rounded-full dark:border-slate-800"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 truncate">
+                            {staff.name}
+                          </p>
+                          <p className="text-xs font-medium text-slate-500">
+                            {staff.ward || "General"}
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                          {timeAgo(staff.lastLoginAt)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
+                      <Activity size={32} className="mb-2 text-slate-300" />
+                      <p>No nurses found.</p>
+                    </div>
+                  )}
+                </div>
+              </WidgetCard>
+            </>
           )}
         </div>
       </div>

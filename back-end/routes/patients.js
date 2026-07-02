@@ -9,7 +9,7 @@ const maskData = require("../utils/maskData");
 // GET All Patients
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const patients = await Patient.find();
+    const patients = await Patient.find().populate("approvedBy", "name");
     // Apply Role-Based Masking
     const maskedData = maskData(patients, req.user);
     res.json(maskedData);
@@ -21,7 +21,7 @@ router.get("/", authMiddleware, async (req, res) => {
 // GET Single Patient by ID
 router.get("/:id", authMiddleware, async (req, res) => {
   try {
-    const patient = await Patient.findById(req.params.id);
+    const patient = await Patient.findById(req.params.id).populate("approvedBy", "name");
     if (!patient) return res.status(404).json({ error: "Patient not found" });
     // Apply Role-Based Masking (wrap in array then unwrap)
     const masked = maskData([patient], req.user);
@@ -59,14 +59,21 @@ router.post("/", async (req, res) => {
 // PATCH Patient - Update medical history, status, or add timeline entry (Doctors only)
 router.patch("/:id", authMiddleware, async (req, res) => {
   try {
-    // Only Doctors (and Admins) can update these fields
-    if (req.user.role !== "Doctor" && req.user.role !== "Admin") {
-      return res.status(403).json({ error: "Forbidden: Only doctors can update patient records." });
+    // Doctors, Admins, and Nurses can update (Nurses can update vitals only)
+    if (req.user.role !== "Doctor" && req.user.role !== "Admin" && req.user.role !== "Nurse") {
+      return res.status(403).json({ error: "Forbidden: Insufficient permissions." });
     }
 
-    const { medicalHistory, status, newTimelineEntry } = req.body;
+    const { medicalHistory, status, newTimelineEntry, vitals } = req.body;
     const patient = await Patient.findById(req.params.id);
     if (!patient) return res.status(404).json({ error: "Patient not found" });
+
+    // Nurses can only update vitals
+    if (req.user.role === "Nurse") {
+      if (medicalHistory !== undefined || status !== undefined || newTimelineEntry) {
+        return res.status(403).json({ error: "Nurses can only update vitals." });
+      }
+    }
 
     // Update medical history if provided
     if (medicalHistory !== undefined) {
@@ -78,6 +85,32 @@ router.patch("/:id", authMiddleware, async (req, res) => {
       patient.status = status;
     }
 
+    // Update vitals if provided and auto-add timeline entry
+    if (vitals) {
+      const changes = [];
+      if (vitals.heartRate && vitals.heartRate !== patient.vitals.heartRate) {
+        changes.push(`Heart Rate: ${patient.vitals.heartRate} → ${vitals.heartRate}`);
+        patient.vitals.heartRate = vitals.heartRate;
+      }
+      if (vitals.bloodPressure && vitals.bloodPressure !== patient.vitals.bloodPressure) {
+        changes.push(`BP: ${patient.vitals.bloodPressure} → ${vitals.bloodPressure}`);
+        patient.vitals.bloodPressure = vitals.bloodPressure;
+      }
+      if (vitals.temperature && vitals.temperature !== patient.vitals.temperature) {
+        changes.push(`Temp: ${patient.vitals.temperature} → ${vitals.temperature}`);
+        patient.vitals.temperature = vitals.temperature;
+      }
+      if (changes.length > 0) {
+        patient.treatmentTimeline.push({
+          event: `Vitals updated: ${changes.join(", ")}`,
+          date: new Date(),
+          doctorId: req.user._id,
+          doctorName: req.user.name,
+          doctorRole: req.user.role,
+        });
+      }
+    }
+
     // Add a new timeline entry if provided
     if (newTimelineEntry && newTimelineEntry.event) {
       patient.treatmentTimeline.push({
@@ -85,6 +118,7 @@ router.patch("/:id", authMiddleware, async (req, res) => {
         date: newTimelineEntry.date || new Date(),
         doctorId: req.user._id,
         doctorName: req.user.name,
+        doctorRole: req.user.role,
       });
     }
 

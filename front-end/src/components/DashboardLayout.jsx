@@ -60,54 +60,49 @@ const DashboardLayout = ({ children, sidebarItems }) => {
   const fetchNotifications = async () => {
     if (!user || !token) return;
     try {
-      let items = [];
-
-      if (role === "Doctor") {
-        // Fetch pending patient requests for this doctor
-        const res = await fetch(
-          `http://localhost:5000/api/patient-requests?role=Doctor&userId=${user._id}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          items = data.map((req) => ({
-            id: req._id,
-            type: req.requestType === "Delete" ? "Discharge Request" : "Admission Request",
-            name: req.requestType === "Delete" ? (req.patientId?.name || "Unknown") : req.name,
-            from: req.nurseId?.name || "A nurse",
-            icon: req.requestType === "Delete" ? "trash" : "userplus",
-            link: "/doctor/reviews",
-          }));
-        }
-      } else if (role === "Admin" && !user.isTempAdmin) {
-        // Fetch pending admin access requests
-        const res = await fetch("http://localhost:5000/api/admin-requests", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const pending = data.filter((r) => r.status === "Pending");
-          items = pending.map((req) => ({
-            id: req._id,
-            type: "Admin Permission Request",
-            name: req.requester?.name || "A doctor",
-            from: req.requester?.specialty || "Unknown specialty",
-            icon: "shield",
-            link: "/admin/requests",
-          }));
-        }
+      const res = await fetch("http://localhost:5000/api/notifications", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data);
       }
-
-      setNotifications(items);
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
     }
   };
 
+  const markAsRead = async (id, link) => {
+    try {
+      await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchNotifications();
+      setShowNotifDropdown(false);
+      if (link) navigate(link);
+    } catch (err) {
+      console.error("Failed to mark as read:", err);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await fetch("http://localhost:5000/api/notifications/read-all", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchNotifications();
+    } catch (err) {
+      console.error("Failed to mark all as read:", err);
+    }
+  };
+
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
+    const interval = setInterval(fetchNotifications, 15000);
     return () => clearInterval(interval);
-  }, [user, token, role]);
+  }, [user, token]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -124,6 +119,7 @@ const DashboardLayout = ({ children, sidebarItems }) => {
     if (type === "trash") return <Trash2 size={16} className="text-red-500" />;
     if (type === "userplus") return <UserPlus size={16} className="text-green-500" />;
     if (type === "shield") return <Shield size={16} className="text-primary-500" />;
+    if (type === "lock") return <Lock size={16} className="text-amber-500" />;
     return <Bell size={16} className="text-slate-500" />;
   };
 
@@ -193,7 +189,7 @@ const DashboardLayout = ({ children, sidebarItems }) => {
       {/* --- MAIN AREA --- */}
       <div className="relative flex flex-col flex-1 h-screen overflow-hidden">
         {/* Top Header */}
-        <header className="z-10 flex items-center justify-between h-20 px-8 bg-white/80 backdrop-blur-md border-b dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800">
+        <header className="relative z-30 flex items-center justify-between h-20 px-8 bg-white/80 backdrop-blur-md border-b dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800">
           {/* LEFT SIDE: Spacer */}
           <div className="flex-1"></div>
 
@@ -228,7 +224,7 @@ const DashboardLayout = ({ children, sidebarItems }) => {
 
               {/* Notification Dropdown */}
               {showNotifDropdown && (
-                <div className="absolute right-0 top-14 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl dark:shadow-slate-900/50 overflow-hidden z-50">
+                <div className="absolute right-0 top-14 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl dark:shadow-slate-900/50 overflow-hidden z-[100]">
                   <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                       Notifications
@@ -251,11 +247,8 @@ const DashboardLayout = ({ children, sidebarItems }) => {
                     ) : (
                       notifications.map((notif) => (
                         <button
-                          key={notif.id}
-                          onClick={() => {
-                            setShowNotifDropdown(false);
-                            navigate(notif.link);
-                          }}
+                          key={notif._id}
+                          onClick={() => markAsRead(notif._id, notif.link)}
                           className="w-full flex items-start gap-3 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors text-left border-b border-slate-50 dark:border-slate-800/50 last:border-none"
                         >
                           <div className="p-2 mt-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0">
@@ -263,13 +256,10 @@ const DashboardLayout = ({ children, sidebarItems }) => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                              {notif.name}
+                              {notif.title}
                             </p>
-                            <p className="text-xs text-primary-600 dark:text-primary-400 font-semibold mt-0.5">
-                              {notif.type}
-                            </p>
-                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                              From: {notif.from}
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-snug">
+                              {notif.message}
                             </p>
                           </div>
                           <ChevronRight size={16} className="text-slate-300 dark:text-slate-600 mt-2 shrink-0" />
@@ -280,13 +270,10 @@ const DashboardLayout = ({ children, sidebarItems }) => {
                   {notifications.length > 0 && (
                     <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800">
                       <button
-                        onClick={() => {
-                          setShowNotifDropdown(false);
-                          navigate(role === "Admin" ? "/admin/requests" : "/doctor/reviews");
-                        }}
+                        onClick={markAllAsRead}
                         className="w-full py-2 text-xs font-bold text-center text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                       >
-                        View All Requests →
+                        Mark all as read ✓
                       </button>
                     </div>
                   )}

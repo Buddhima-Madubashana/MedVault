@@ -9,13 +9,12 @@ function LandingPage() {
   const [activeView, setActiveView] = useState("login");
 
   return (
-    <div>
-      <div className="">
-        {/* Background / static UI */}
+    <div className="min-h-screen w-full flex flex-col justify-center bg-gradient-to-br from-primary-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+      {/* <div className="">
         <GradientView />
         <TypewriterView />
-      </div>
-      <div>
+      </div> */}
+      <div className="flex-grow flex items-center justify-center p-4">
         {/* Auth components */}
         {activeView === "login" && (
           <Login2 onSwitchToSignup={() => setActiveView("signup")} />

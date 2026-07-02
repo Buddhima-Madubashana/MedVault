@@ -271,8 +271,7 @@ function Login({ onSwitchToSignup }) {
   }
 
   return (
-    <div className="relative flex items-center justify-center w-full min-h-[80vh] font-sans">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 -z-10" />
+    <div className="relative w-full flex items-center justify-center font-sans">
       <ThemeToggleButton />
       <div className="relative w-full max-w-md p-8 space-y-8 bg-white/70 backdrop-blur-xl border rounded-3xl shadow-soft dark:bg-slate-900/70 border-slate-200/50 dark:border-slate-800">
         <div className="space-y-3 text-center flex flex-col items-center">
