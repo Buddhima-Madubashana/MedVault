@@ -7,6 +7,7 @@ const systemSettingsSchema = new mongoose.Schema(
     sessionTimeout: { type: Number, default: 15 }, // minutes
     maxLoginAttempts: { type: Number, default: 3 },
     accountLockoutDuration: { type: Number, default: 30 }, // minutes
+    inactivityTimeout: { type: Number, default: 60 }, // seconds
     
     // Track last update
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

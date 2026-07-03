@@ -12,6 +12,7 @@ This project serves as both a functional prototype and an educational platform f
 
 ### **🔐 Advanced Security Controls**
 - **Context-Aware Access Control (CAAC):** Dynamic permissions based on time, location, and device context
+- **Active Session Self-Defense:** Automated idle lock screen (admin-configurable timeout) requiring login password verification, and a floating 'Panic Camouflage' button to instantly obscure patient records with a mock operational schedule.
 - **Role-Based Access Control (RBAC):** Four distinct user roles (Patient, Nurse, Doctor, Administrator)
 - **AES-256 Encryption:** Field-level encryption for sensitive patient data (Age, Condition, Contact Info)
 - **Granular Data Masking:** Role-specific data visibility (Admins see all, Doctors see medical, Nurses see basic info)

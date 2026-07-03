@@ -20,6 +20,7 @@ const SystemSettings = () => {
     sessionTimeout: 15,
     maxLoginAttempts: 3,
     accountLockoutDuration: 30,
+    inactivityTimeout: 60,
   });
 
   const [notification, setNotification] = useState(null);
@@ -236,7 +237,7 @@ const SystemSettings = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
             <div className="space-y-2">
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
                 Session Timeout
@@ -283,6 +284,21 @@ const SystemSettings = () => {
                 className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
               />
               <p className="text-xs text-slate-400">{policies.accountLockoutDuration} minutes</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
+                Inactivity Auto-Lock
+              </label>
+              <input
+                type="number"
+                name="inactivityTimeout"
+                value={policies.inactivityTimeout}
+                onChange={handleChange}
+                min="10"
+                className="w-full px-4 py-2 border outline-none rounded-xl border-slate-200 bg-slate-50 focus:ring-2 focus:ring-primary-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+              />
+              <p className="text-xs text-slate-400">{policies.inactivityTimeout || 60} seconds</p>
             </div>
           </div>
         </div>

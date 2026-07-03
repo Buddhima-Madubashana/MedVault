@@ -68,7 +68,7 @@ router.put("/", authMiddleware, async (req, res) => {
       userName: req.user.name,
       userRole: req.user.role,
       action: "SYSTEM_CONFIG_UPDATE",
-      details: `Secure Config Update: PwdLen=${settings.minPasswordLength}, SpecialChars=${settings.requireSpecialChars}, Timeout=${settings.sessionTimeout}m, MaxAttempts=${settings.maxLoginAttempts}${policyTightened ? `. Password reset flagged for ${flaggedCount} users.` : ""}`,
+      details: `Secure Config Update: PwdLen=${settings.minPasswordLength}, SpecialChars=${settings.requireSpecialChars}, Timeout=${settings.sessionTimeout}m, MaxAttempts=${settings.maxLoginAttempts}, InactivityLock=${settings.inactivityTimeout}s${policyTightened ? `. Password reset flagged for ${flaggedCount} users.` : ""}`,
       ipAddress: req.ip,
     });
     await log.save();
