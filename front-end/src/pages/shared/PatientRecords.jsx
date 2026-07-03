@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Notification from "../../components/Notification";
 import { useAuth } from "../../contexts/AuthContext";
+import { isUserInShift } from "../../utils/shiftHelper";
 
 const statusBadgeStyle = (status) => {
   const map = {
@@ -241,11 +242,21 @@ const PatientRecords = () => {
           <p className="mt-1 text-slate-500">Manage active patient records.</p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 font-bold text-white transition-all bg-primary-600 shadow-lg rounded-xl hover:bg-primary-700 shadow-primary-500/30"
+          onClick={() => {
+            if (isUserInShift(user)) {
+              setIsModalOpen(true);
+            }
+          }}
+          disabled={!isUserInShift(user)}
+          className={`flex items-center gap-2 px-5 py-2.5 font-bold text-white transition-all rounded-xl shadow-lg ${
+            isUserInShift(user)
+              ? "bg-primary-600 hover:bg-primary-700 shadow-primary-500/30"
+              : "bg-slate-500/40 text-slate-350 cursor-not-allowed opacity-80"
+          }`}
+          title={isUserInShift(user) ? "" : "Access Blocked: Adding patients is restricted outside active shift hours."}
         >
           <Plus size={18} />{" "}
-          {role === "Nurse" ? "Request Admission" : "Add Patient"}
+          {role === "Nurse" ? "Request Admission" : "Add Patient"} {!isUserInShift(user) && " (Out of Shift)"}
         </button>
       </div>
 
@@ -260,12 +271,21 @@ const PatientRecords = () => {
               <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold ${statusBadgeStyle(patient.status || "Stable")}`}>
                 {patient.status || "Stable"}
               </span>
-              <button
-                onClick={() => initiateDelete(patient)}
-                className="text-slate-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <Trash2 size={18} />
-              </button>
+              {!isUserInShift(user) ? (
+                <span 
+                  className="text-slate-300 p-1.5 cursor-not-allowed opacity-60" 
+                  title="Access Blocked: Deleting/Discharging patients is restricted outside active shift hours."
+                >
+                  <Trash2 size={18} />
+                </span>
+              ) : (
+                <button
+                  onClick={() => initiateDelete(patient)}
+                  className="text-slate-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 size={18} />
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-4 mb-4">
               <img

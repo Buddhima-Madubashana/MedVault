@@ -23,74 +23,7 @@ import {
   X,
   Eye,
   EyeOff,
-  ShieldOff,
 } from "lucide-react";
-
-const CamouflageScheduleView = () => {
-  const scheduleData = [
-    { time: "08:00 - 09:30", task: "Shift Handover & Morning Briefing", dept: "All Departments", status: "Completed" },
-    { time: "09:30 - 11:00", task: "HEPA Filter Maintenance & Airflow Check", dept: "Ward 3 & ICU", status: "Completed" },
-    { time: "11:00 - 12:30", task: "Operating Room 2 Sterilization Protocol", dept: "Surgical Suite", status: "In Progress" },
-    { time: "13:00 - 14:00", task: "Clinical Staff Training - Policy Update", dept: "Main Conference Room", status: "Scheduled" },
-    { time: "14:15 - 15:30", task: "Medical Gas Pipeline Pressure Test", dept: "Central Gas Supply", status: "Scheduled" },
-    { time: "16:00 - 17:00", task: "Pharmacy Fridge Temperature Log Audit", dept: "Main Pharmacy", status: "Scheduled" },
-  ];
-
-  return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center gap-4 text-amber-800 dark:text-amber-300">
-        <Shield size={24} className="shrink-0 animate-pulse text-amber-500" />
-        <div>
-          <p className="font-bold">Security Camouflage Active</p>
-          <p className="text-xs opacity-90">All active clinical records and patient data have been obscured. The system is showing non-sensitive operational schedules. Click the floating shield button to return.</p>
-        </div>
-      </div>
-
-      <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-soft">
-        <div className="flex flex-col justify-between gap-4 mb-6 md:flex-row md:items-center">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Daily Operational Registry</h2>
-            <p className="text-sm text-slate-500 font-medium mt-1">Non-sensitive hospital resource planning and maintenance logs</p>
-          </div>
-          <span className="px-3.5 py-1 text-xs font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-full">
-            System Clock Synchronized
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-400 uppercase">
-                <th className="py-3 px-4">Time Interval</th>
-                <th className="py-3 px-4">Operational Task</th>
-                <th className="py-3 px-4">Location/Dept</th>
-                <th className="py-3 px-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
-              {scheduleData.map((item, index) => (
-                <tr key={index} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20">
-                  <td className="py-4 px-4 font-semibold text-slate-800 dark:text-slate-200">{item.time}</td>
-                  <td className="py-4 px-4 text-slate-650 dark:text-slate-350">{item.task}</td>
-                  <td className="py-4 px-4 text-slate-500">{item.dept}</td>
-                  <td className="py-4 px-4">
-                    <span className={`px-2.5 py-1 text-xs font-bold rounded-lg ${
-                      item.status === "Completed" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
-                      item.status === "In Progress" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" :
-                      "bg-slate-100 text-slate-650 dark:bg-slate-800 dark:text-slate-400"
-                    }`}>
-                      {item.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const DashboardLayout = ({ children, sidebarItems }) => {
   const { role, logout, user, token } = useAuth();
@@ -106,11 +39,6 @@ const DashboardLayout = ({ children, sidebarItems }) => {
   // Cooperative Security states
   const [inactivityTimeout, setInactivityTimeout] = useState(60);
   const [isLocked, setIsLocked] = useState(false);
-  const [unlockPassword, setUnlockPassword] = useState("");
-  const [isUnlocking, setIsUnlocking] = useState(false);
-  const [unlockError, setUnlockError] = useState("");
-  const [isCamouflaged, setIsCamouflaged] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   // Fetch Settings for inactivityTimeout
   useEffect(() => {
@@ -128,10 +56,9 @@ const DashboardLayout = ({ children, sidebarItems }) => {
   const lastActivityRef = useRef(Date.now());
 
   useEffect(() => {
-    if (isLocked) return;
-
     const handleActivity = () => {
       lastActivityRef.current = Date.now();
+      setIsLocked(false);
     };
 
     const events = ["mousemove", "keydown", "click", "scroll", "touchstart"];
@@ -148,36 +75,9 @@ const DashboardLayout = ({ children, sidebarItems }) => {
       events.forEach((event) => window.removeEventListener(event, handleActivity));
       clearInterval(checkInterval);
     };
-  }, [inactivityTimeout, isLocked]);
+  }, [inactivityTimeout]);
 
-  const handleUnlockSubmit = async (e) => {
-    e.preventDefault();
-    if (!user || !user.email) return;
 
-    setIsUnlocking(true);
-    setUnlockError("");
-
-    try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email, password: unlockPassword }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setIsLocked(false);
-        setUnlockPassword("");
-        lastActivityRef.current = Date.now(); // reset activity timer
-      } else {
-        setUnlockError(data.message || "Invalid password. Access Denied.");
-      }
-    } catch (err) {
-      setUnlockError("Network error. Please try again.");
-    } finally {
-      setIsUnlocking(false);
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -453,110 +353,17 @@ const DashboardLayout = ({ children, sidebarItems }) => {
         {/* Dynamic Content Scroll Area */}
         <main className="flex-1 p-8 overflow-y-auto scroll-smooth bg-slate-50 dark:bg-slate-950">
           <div className="mx-auto duration-500 max-w-7xl animate-in fade-in slide-in-from-bottom-4">
-            {isCamouflaged ? <CamouflageScheduleView /> : children}
+            {children}
           </div>
         </main>
       </div>
 
-      {/* Floating Panic/Camouflage Action Button */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 font-sans">
-        {isCamouflaged && (
-          <div className="px-4 py-2 text-xs font-bold text-amber-800 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-900 rounded-xl shadow-md backdrop-blur-md animate-bounce">
-            Camouflage Shield Active
-          </div>
-        )}
-        <button
-          onClick={() => setIsCamouflaged(!isCamouflaged)}
-          className={`p-4 rounded-full shadow-2xl border transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center ${
-            isCamouflaged
-              ? "bg-amber-500 hover:bg-amber-600 border-amber-400 text-white"
-              : "bg-red-650 hover:bg-red-700 border-red-500 text-white"
-          }`}
-          title={isCamouflaged ? "Restore Clinic View" : "Activate Security Camouflage"}
-        >
-          {isCamouflaged ? <ShieldOff size={24} /> : <Shield size={24} />}
-        </button>
-      </div>
-
-      {/* Idle Lock Screen Overlay */}
+      {/* Idle Blur Overlay */}
       {isLocked && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/90 backdrop-blur-2xl transition-all duration-300 font-sans">
-          <div className="w-full max-w-md p-8 space-y-6 bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl text-center text-white">
-            <div className="inline-flex p-4 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 mb-2">
-              <Lock size={32} className="animate-pulse" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight text-white">
-                Workstation Locked
-              </h2>
-              <p className="mt-2 text-sm text-slate-400">
-                This session has been locked due to inactivity to protect patient privacy.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/50 flex items-center gap-3 text-left">
-              <div className="w-10 h-10 overflow-hidden rounded-full shadow-md bg-slate-700 ring-2 ring-white/10 shrink-0">
-                <img
-                  src={
-                    user?.imageUrl ||
-                    `https://ui-avatars.com/api/?name=${user?.name || role}&background=0D8ABC&color=fff`
-                  }
-                  alt="User"
-                  className="object-cover w-full h-full"
-                />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-white truncate">{user?.name}</p>
-                <p className="text-xs text-slate-400">{role}</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleUnlockSubmit} className="space-y-4">
-              <div className="space-y-2 text-left">
-                <label className="text-xs font-semibold text-slate-450">
-                  Enter Password to Resume
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={unlockPassword}
-                    onChange={(e) => setUnlockPassword(e.target.value)}
-                    placeholder="Enter your login password"
-                    required
-                    className="w-full px-4 py-3 text-sm bg-slate-950 border border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-red-500 text-white transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute transition-colors -translate-y-1/2 right-4 top-1/2 text-slate-500 hover:text-slate-350"
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              {unlockError && (
-                <div className="p-3.5 text-xs font-semibold text-red-400 bg-red-950/30 rounded-xl border border-red-900/50 text-left">
-                  {unlockError}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isUnlocking}
-                className="w-full px-4 py-3 text-sm font-bold transition-all rounded-xl shadow-lg bg-red-650 hover:bg-red-700 text-white disabled:opacity-50"
-              >
-                {isUnlocking ? "Unlocking..." : "Unlock Session"}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="w-full text-xs font-bold text-slate-400 hover:text-white transition-colors pt-2"
-              >
-                Sign Out / Switch Account
-              </button>
-            </form>
+        <div className="fixed inset-0 z-[9999] bg-slate-900/10 dark:bg-slate-950/10 backdrop-blur-2xl transition-all duration-550 flex items-center justify-center select-none pointer-events-none font-sans">
+          <div className="p-5 bg-slate-900/80 dark:bg-slate-950/80 border border-slate-800 rounded-2xl shadow-2xl flex items-center gap-3 text-white pointer-events-auto">
+            <Lock size={18} className="text-red-500 animate-pulse" />
+            <span className="text-sm font-semibold tracking-tight">Workstation Blurred — Move mouse to resume</span>
           </div>
         </div>
       )}

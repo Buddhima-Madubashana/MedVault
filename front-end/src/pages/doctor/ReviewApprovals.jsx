@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Check, X, User, Activity, Trash2, UserPlus } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import Notification from "../../components/Notification";
+import { isUserInShift } from "../../utils/shiftHelper";
 
 const ReviewApprovals = () => {
   const { user } = useAuth();
@@ -126,11 +127,23 @@ const ReviewApprovals = () => {
                     Reject
                   </button>
                   <button
-                    onClick={() => handleAction(req._id, "approve")}
-                    className={`flex-1 md:flex-none px-6 py-2 rounded-xl text-white font-bold shadow-lg transition-all flex items-center justify-center gap-2 ${isDelete ? "bg-red-600 hover:bg-red-700 shadow-red-200 dark:shadow-red-900/30" : "bg-primary-600 hover:bg-primary-700 shadow-primary-200 dark:shadow-primary-900/30"}`}
+                    onClick={() => {
+                      if (isUserInShift(user)) {
+                        handleAction(req._id, "approve");
+                      }
+                    }}
+                    disabled={!isUserInShift(user)}
+                    className={`flex-1 md:flex-none px-6 py-2 rounded-xl text-white font-bold shadow-lg transition-all flex items-center justify-center gap-2 ${
+                      !isUserInShift(user)
+                        ? "bg-slate-500/40 text-slate-300 border border-slate-700/50 cursor-not-allowed opacity-80"
+                        : isDelete
+                          ? "bg-red-600 hover:bg-red-700 shadow-red-200 dark:shadow-red-900/30"
+                          : "bg-primary-600 hover:bg-primary-700 shadow-primary-200 dark:shadow-primary-900/30"
+                    }`}
+                    title={isUserInShift(user) ? "" : "Access Blocked: Approving requests is only allowed during active shift hours."}
                   >
                     <Check size={18} />{" "}
-                    {isDelete ? "Confirm Delete" : "Approve Add"}
+                    {isDelete ? "Confirm Delete" : "Approve Add"} {!isUserInShift(user) && " (Out of Shift)"}
                   </button>
                 </div>
               </div>

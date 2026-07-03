@@ -14,6 +14,10 @@ const userSchema = new mongoose.Schema(
     specialty: { type: String },
     ward: { type: String },
     
+    // Shift Schedule
+    shiftStart: { type: String }, // HH:MM format
+    shiftEnd: { type: String },   // HH:MM format
+    
     // Temporary Admin Permissions
     isTempAdmin: { type: Boolean, default: false },
     tempAdminExpiresAt: { type: Date },

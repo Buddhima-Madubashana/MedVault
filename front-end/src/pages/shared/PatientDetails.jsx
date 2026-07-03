@@ -16,6 +16,7 @@ import {
   Lock,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { isUserInShift } from "../../utils/shiftHelper";
 import { AnimatePresence, motion } from "framer-motion";
 import Notification from "../../components/Notification";
 
@@ -308,15 +309,21 @@ const PatientDetails = () => {
                 <Activity className="text-red-500" size={20} /> Current Vitals
               </h3>
               {canEditVitals && !editingVitals && (
-                <button
-                  onClick={() => {
-                    setVitalsDraft(patient.vitals || { heartRate: "72 bpm", bloodPressure: "120/80", temperature: "98.6 °F" });
-                    setEditingVitals(true);
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg transition-colors"
-                >
-                  <Edit3 size={13} /> Edit
-                </button>
+                isUserInShift(user) ? (
+                  <button
+                    onClick={() => {
+                      setVitalsDraft(patient.vitals || { heartRate: "72 bpm", bloodPressure: "120/80", temperature: "98.6 °F" });
+                      setEditingVitals(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg transition-colors"
+                  >
+                    <Edit3 size={13} /> Edit
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-1 text-xs text-slate-400 font-semibold" title="Access Blocked: Editing vitals is restricted outside active shift hours.">
+                    <Lock size={12} /> Out of Shift
+                  </span>
+                )
               )}
             </div>
             {editingVitals ? (
@@ -391,15 +398,21 @@ const PatientDetails = () => {
                 <FileText className="text-primary-500" size={20} /> Medical History
               </h3>
               {isDoctor && !editingHistory && (
-                <button
-                  onClick={() => {
-                    setHistoryDraft(patient.medicalHistory || "");
-                    setEditingHistory(true);
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/40 rounded-lg transition-colors"
-                >
-                  <Edit3 size={13} /> Edit
-                </button>
+                isUserInShift(user) ? (
+                  <button
+                    onClick={() => {
+                      setHistoryDraft(patient.medicalHistory || "");
+                      setEditingHistory(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/40 rounded-lg transition-colors"
+                  >
+                    <Edit3 size={13} /> Edit
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-1 text-xs text-slate-400 font-semibold" title="Access Blocked: Editing medical history is restricted outside active shift hours.">
+                    <Lock size={12} /> Out of Shift
+                  </span>
+                )
               )}
               {!isDoctor && (
                 <span className="flex items-center gap-1 text-xs text-slate-400">
@@ -466,12 +479,18 @@ const PatientDetails = () => {
                   </span>
                 )}
                 {isDoctor && (
-                  <button
-                    onClick={() => setShowAddTimeline(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded-lg transition-colors"
-                  >
-                    <Plus size={13} /> Add Entry
-                  </button>
+                  isUserInShift(user) ? (
+                    <button
+                      onClick={() => setShowAddTimeline(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded-lg transition-colors"
+                    >
+                      <Plus size={13} /> Add Entry
+                    </button>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-slate-405 font-semibold" title="Access Blocked: Adding timeline entries is restricted outside active shift hours.">
+                      <Lock size={12} /> Out of Shift
+                    </span>
+                  )
                 )}
               </div>
             </div>

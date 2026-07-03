@@ -11,8 +11,8 @@ This project serves as both a functional prototype and an educational platform f
 ## **✨ Key Features**
 
 ### **🔐 Advanced Security Controls**
-- **Context-Aware Access Control (CAAC):** Dynamic permissions based on time, location, and device context
-- **Active Session Self-Defense:** Automated idle lock screen (admin-configurable timeout) requiring login password verification, and a floating 'Panic Camouflage' button to instantly obscure patient records with a mock operational schedule.
+- **Context-Aware Access Control (CAAC):** Scheduled shift-based access windows, dynamically restricting write/edit privileges for Doctors and Nurses when outside of active shift hours.
+- **Active Session Self-Defense:** Automated idle lock screen (admin-configurable timeout) requiring login password verification to resume.
 - **Role-Based Access Control (RBAC):** Four distinct user roles (Patient, Nurse, Doctor, Administrator)
 - **AES-256 Encryption:** Field-level encryption for sensitive patient data (Age, Condition, Contact Info)
 - **Granular Data Masking:** Role-specific data visibility (Admins see all, Doctors see medical, Nurses see basic info)
@@ -157,27 +157,14 @@ medvault/
 
 ## **📊 Context-Aware Security**
 
-MedVault evaluates four context dimensions to make dynamic security decisions:
+MedVault evaluates active work shift schedules to make dynamic, context-aware security decisions:
 
-### **Temporal Context**
-- Time of day and business hours
-- Emergency periods vs normal operations
-- Shift patterns and typical access times
-
-### **Spatial Context**
-- Network location and IP geolocation
-- Hospital internal vs external access
-- Trusted vs untrusted locations
-
-### **Device Context**
-- Device fingerprint and registration status
-- Corporate vs personal devices
-- New device detection and response
-
-### **Behavioral Context**
-- User access pattern analysis
-- Typical workflow sequences
-- Anomaly detection and risk scoring
+### **Shift-Active Access Window Context**
+- **Dynamic Shifts:** Administrators assign shifts (Start and End times) to Doctors and Nurses.
+- **Enforced Access Constraints:**
+  - **Doctor Outside Shift:** Restricted to read-only views of patient profiles (cannot edit current vitals, medical history, or treatment timelines; cannot add/delete patients; cannot request admin permissions).
+  - **Nurse Outside Shift:** Restricted to read-only views of patient profiles (cannot edit current vitals; cannot add/delete patients).
+  - **Within Shift:** Full role-based read/write access is active.
 
 ## **🎯 Demonstration Scenarios**
 

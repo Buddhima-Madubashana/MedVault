@@ -3,6 +3,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../contexts/ToastContext";
 import AdminRequestModal from "../../components/AdminRequestModal"; // Import Modal
+import { isUserInShift } from "../../utils/shiftHelper";
 import {
   Clock,
   Activity,
@@ -266,6 +267,14 @@ const DashboardHome = () => {
                   <button disabled className="px-5 py-2.5 bg-yellow-500/50 text-white rounded-xl font-bold cursor-not-allowed border border-white/10">
                     Request Pending...
                   </button>
+               ) : !isUserInShift(user) ? (
+                 <button 
+                   disabled
+                   className="px-5 py-2.5 bg-slate-500/40 text-slate-300 rounded-xl font-bold cursor-not-allowed border border-white/5 opacity-80"
+                   title="Access Blocked: Requesting admin permissions is only allowed during active shift hours."
+                 >
+                   <Lock size={18} className="text-slate-400" /> Request Admin Permission (Out of Shift)
+                 </button>
                ) : (
                  <button 
                    onClick={() => setIsRequestModalOpen(true)}

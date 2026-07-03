@@ -155,4 +155,24 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// Update User Shift (Admin only or authorized users)
+router.put("/:id/shift", async (req, res) => {
+  try {
+    const { shiftStart, shiftEnd } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.shiftStart = shiftStart || "";
+    user.shiftEnd = shiftEnd || "";
+    await user.save();
+
+    // Log the change
+    await logAction(user, "SHIFT_CONFIG_UPDATE", `Shift updated to: ${shiftStart || "None"} - ${shiftEnd || "None"}`, req);
+
+    res.json({ message: "User shift updated successfully", user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

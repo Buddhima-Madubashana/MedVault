@@ -20,6 +20,59 @@ const AllUsers = () => {
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [notification, setNotification] = useState(null);
+  
+  // Shift Editor State
+  const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
+  const [selectedUserForShift, setSelectedUserForShift] = useState(null);
+  const [shiftStartVal, setShiftStartVal] = useState("");
+  const [shiftEndVal, setShiftEndVal] = useState("");
+
+  const openShiftModal = (item) => {
+    setSelectedUserForShift(item);
+    setShiftStartVal(item.shiftStart || "");
+    setShiftEndVal(item.shiftEnd || "");
+    setIsShiftModalOpen(true);
+  };
+
+  const handleSaveShift = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/users/${selectedUserForShift._id}/shift`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          shiftStart: shiftStartVal,
+          shiftEnd: shiftEndVal,
+        }),
+      });
+
+      if (res.ok) {
+        setNotification({
+          type: "success",
+          title: "Shift Saved",
+          message: `Shift schedule updated for ${selectedUserForShift.name}.`,
+        });
+        setIsShiftModalOpen(false);
+        // Update local state immediately
+        setData(data.map((u) => u._id === selectedUserForShift._id ? { ...u, shiftStart: shiftStartVal, shiftEnd: shiftEndVal } : u));
+      } else {
+        const err = await res.json();
+        setNotification({
+          type: "error",
+          title: "Update Failed",
+          message: err.message || "Failed to update shift.",
+        });
+      }
+    } catch (e) {
+      setNotification({
+        type: "error",
+        title: "Server Error",
+        message: "Could not connect to server.",
+      });
+    }
+  };
 
   // Confirm Dialog State
   const [confirmDialog, setConfirmDialog] = useState({
@@ -237,9 +290,25 @@ const AllUsers = () => {
                       <span className="block mb-1 text-xs font-bold uppercase text-slate-400">
                         Email
                       </span>
-                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                      <span className="font-medium text-slate-700 dark:text-slate-300 block truncate">
                         {item.email}
                       </span>
+                    </div>
+                    <div className="col-span-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-750/50 flex justify-between items-center">
+                      <div>
+                        <span className="block mb-0.5 text-xs font-bold uppercase text-slate-400">
+                          Shift Window
+                        </span>
+                        <span className="font-semibold text-sm text-slate-750 dark:text-slate-300">
+                          {item.shiftStart && item.shiftEnd ? `${item.shiftStart} - ${item.shiftEnd}` : "Always Active"}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => openShiftModal(item)}
+                        className="px-3 py-1.5 text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all"
+                      >
+                        Edit Shift
+                      </button>
                     </div>
                   </>
                 )}
@@ -288,6 +357,63 @@ const AllUsers = () => {
                   className="px-4 py-2 text-sm font-bold text-white transition-all bg-red-600 rounded-lg shadow-md hover:bg-red-700 shadow-red-500/20"
                 >
                   Confirm Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- EDIT SHIFT MODAL --- */}
+      <AnimatePresence>
+        {isShiftModalOpen && selectedUserForShift && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/20 backdrop-blur-[2px] p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-sm p-6 bg-white border shadow-2xl dark:bg-slate-800 rounded-2xl border-slate-200 dark:border-slate-700 text-slate-850 dark:text-white"
+            >
+              <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">
+                Edit Staff Shift
+              </h3>
+              <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+                Configure the active working shift window for <strong>{selectedUserForShift.name}</strong>. The user will only have write access within this time.
+              </p>
+              
+              <div className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-xs font-bold uppercase text-slate-450 mb-1">Shift Start Time</label>
+                  <input
+                    type="time"
+                    value={shiftStartVal}
+                    onChange={(e) => setShiftStartVal(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-900 text-slate-800 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase text-slate-450 mb-1">Shift End Time</label>
+                  <input
+                    type="time"
+                    value={shiftEndVal}
+                    onChange={(e) => setShiftEndVal(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-900 text-slate-800 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setIsShiftModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium transition-colors rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveShift}
+                  className="px-4 py-2 text-sm font-bold text-white transition-all bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 shadow-blue-500/20"
+                >
+                  Save Shift
                 </button>
               </div>
             </motion.div>
