@@ -290,7 +290,9 @@ const PatientDetails = () => {
               </div>
               <div className="col-span-2 p-4 border bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border-slate-100 dark:border-slate-700/50">
                 <span className="block mb-1 text-xs font-bold uppercase text-slate-400">Condition</span>
-                <span className="text-xl font-bold text-primary-600 dark:text-primary-400">{patient.disease}</span>
+                <span className="text-xl font-bold text-primary-600 dark:text-primary-400">
+                  {patient.disease}
+                </span>
               </div>
             </div>
           </div>

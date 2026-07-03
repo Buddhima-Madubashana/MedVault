@@ -45,6 +45,7 @@ const DashboardHome = () => {
   const [requestStatus, setRequestStatus] = useState("None"); // None, Pending, Approved
   const [timeLeft, setTimeLeft] = useState(null);
   const [currentUser, setCurrentUser] = useState(user); // Fresh user data
+  const [patientCount, setPatientCount] = useState(0);
   const { success, error } = useToast();
 
   // 0. Fetch Fresh User Data (for Permission Status)
@@ -86,10 +87,31 @@ const DashboardHome = () => {
     }
   };
 
+  const fetchPatientCount = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("http://localhost:5000/api/patients", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setPatientCount(data.length);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load patient count:", err);
+    }
+  };
+
   useEffect(() => {
     refreshUser();
-    // Poll every minute to update countdown/status?
-    const interval = setInterval(refreshUser, 60000);
+    fetchPatientCount();
+    // Poll every 5 seconds to immediately catch admin changes
+    const interval = setInterval(() => {
+      refreshUser();
+      fetchPatientCount();
+    }, 5000);
     return () => clearInterval(interval);
   }, [user, token]);
 
@@ -336,16 +358,18 @@ const DashboardHome = () => {
             {role !== "Admin" && (
               <div className="grid grid-cols-2 pt-6 mt-6 border-t divide-x divide-slate-100 dark:divide-slate-700 border-slate-100 dark:border-slate-700">
                 <div>
-                  <span className="block text-2xl font-bold text-slate-800 dark:text-white">
-                    12
+                  <span className="block text-xl font-bold text-slate-800 dark:text-white truncate">
+                    {patientCount}
                   </span>
                   <span className="text-xs font-bold uppercase text-slate-400">
                     Patients
                   </span>
                 </div>
                 <div>
-                  <span className="block text-2xl font-bold text-slate-800 dark:text-white">
-                    8h
+                  <span className="block text-[13px] leading-[28px] font-bold text-slate-800 dark:text-white truncate" title={currentUser?.shiftStart && currentUser?.shiftEnd ? `${currentUser.shiftStart} - ${currentUser.shiftEnd}` : "Always Active"}>
+                    {currentUser?.shiftStart && currentUser?.shiftEnd 
+                      ? `${currentUser.shiftStart}-${currentUser.shiftEnd}` 
+                      : "Always"}
                   </span>
                   <span className="text-xs font-bold uppercase text-slate-400">
                     On Shift
