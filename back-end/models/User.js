@@ -22,6 +22,9 @@ const userSchema = new mongoose.Schema(
     isTempAdmin: { type: Boolean, default: false },
     tempAdminExpiresAt: { type: Date },
 
+    // Backup cover Doctor
+    backupDoctor: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+
     failedLoginAttempts: { type: Number, default: 0 },
     isLocked: { type: Boolean, default: false },
 

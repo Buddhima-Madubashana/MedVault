@@ -32,6 +32,8 @@ import SystemSettings from "./pages/admin/SystemSettings";
 // New Approval Pages
 import PendingApprovals from "./pages/nurse/PendingApprovals";
 import ReviewApprovals from "./pages/doctor/ReviewApprovals";
+import LeaveManagement from "./pages/shared/LeaveManagement";
+import AdminLeaves from "./pages/admin/AdminLeaves";
 
 // Placeholder
 const Placeholder = ({ title }) => (
@@ -78,11 +80,9 @@ function App() {
               element={<Placeholder title="Security Policies" />}
             />
             <Route path="logs" element={<Placeholder title="Audit Logs" />} />
-            <Route
-              path="settings"
-              element={<SystemSettings />}
-            />
+            <Route path="settings" element={<SystemSettings />} />
             <Route path="requests" element={<AdminRequests />} />
+            <Route path="leaves" element={<AdminLeaves />} />
           </Route>
 
           {/* --- DOCTOR ROUTES --- */}
@@ -101,6 +101,7 @@ function App() {
             <Route path="nurses" element={<NurseList />} />
             <Route path="doctors" element={<DoctorList />} />
             <Route path="patients/:id" element={<PatientDetails />} />
+            <Route path="leaves" element={<LeaveManagement />} />
           </Route>
 
           {/* --- NURSE ROUTES --- */}
@@ -119,6 +120,7 @@ function App() {
             <Route path="nurses" element={<NurseList />} />
             <Route path="doctors" element={<DoctorList />} />
             <Route path="patients/:id" element={<PatientDetails />} />
+            <Route path="leaves" element={<LeaveManagement />} />
           </Route>
         </Routes>
       </Router>

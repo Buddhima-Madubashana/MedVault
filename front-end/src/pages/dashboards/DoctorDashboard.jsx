@@ -8,6 +8,7 @@ const sidebarItems = [
   { name: "Review Approvals", path: "/doctor/reviews" }, // New Link
   { name: "Nurse List", path: "/doctor/nurses" },
   { name: "Doctor List", path: "/doctor/doctors" },
+  { name: "Leave Management", path: "/doctor/leaves" },
 ];
 
 const DoctorDashboard = () => {

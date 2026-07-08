@@ -10,6 +10,7 @@ const sidebarItems = [
   { name: "All Users", path: "/admin/all-users" },
   { name: "Audit Logs", path: "/admin/logs" },
   { name: "Admin Requests", path: "/admin/requests" },
+  { name: "Leave Requests", path: "/admin/leaves" },
   { name: "System Settings", path: "/admin/settings" },
 ];
 

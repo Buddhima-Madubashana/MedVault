@@ -20,6 +20,16 @@ module.exports = async function (req, res, next) {
       return res.status(401).json({ message: "User not found" });
     }
 
+    // Check Leave Status
+    const { checkUserLeaveStatus } = require("../utils/leaveChecker");
+    const leaveStatus = await checkUserLeaveStatus(user._id);
+    if (leaveStatus.onLeave && !leaveStatus.overrideActive) {
+      return res.status(403).json({
+        message: "Access Denied: You are currently on leave.",
+        onLeave: true,
+      });
+    }
+
     req.user = user;
     next();
   } catch (err) {

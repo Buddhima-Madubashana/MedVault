@@ -30,7 +30,7 @@ const ReviewApprovals = () => {
     try {
       const endpoint =
         action === "approve"
-          ? `http://localhost:5000/api/patient-requests/${id}/approve`
+          ? `http://localhost:5000/api/patient-requests/${id}/approve?actionBy=${user._id}`
           : `http://localhost:5000/api/patient-requests/${id}?actionBy=${user._id}`;
 
       const method = action === "approve" ? "POST" : "DELETE";

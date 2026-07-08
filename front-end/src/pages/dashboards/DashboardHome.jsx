@@ -48,6 +48,18 @@ const DashboardHome = () => {
   const [patientCount, setPatientCount] = useState(0);
   const { success, error } = useToast();
 
+  // New States
+  const [patients, setPatients] = useState([]);
+  const [allDoctors, setAllDoctors] = useState([]);
+  const [selectedBackup, setSelectedBackup] = useState(user?.backupDoctor || "");
+
+  // Update selectedBackup when currentUser updates
+  useEffect(() => {
+    if (currentUser) {
+      setSelectedBackup(currentUser.backupDoctor || "");
+    }
+  }, [currentUser]);
+
   // 0. Fetch Fresh User Data (for Permission Status)
   const refreshUser = async () => {
     if (!user) return;
@@ -97,6 +109,7 @@ const DashboardHome = () => {
         const data = await res.json();
         if (Array.isArray(data)) {
           setPatientCount(data.length);
+          setPatients(data);
         }
       }
     } catch (err) {
@@ -162,7 +175,10 @@ const DashboardHome = () => {
     if (role === "Doctor" || role === "Nurse") {
       fetch(`http://localhost:5000/api/users/doctors`)
         .then((res) => res.json())
-        .then((data) => setDoctorList(data.slice(0, 4)))
+        .then((data) => {
+          setDoctorList(data.slice(0, 4));
+          setAllDoctors(data);
+        })
         .catch((err) => console.error(err));
       fetch(`http://localhost:5000/api/users/nurses`)
         .then((res) => res.json())
@@ -180,6 +196,50 @@ const DashboardHome = () => {
         .catch((err) => console.error(err));
     }
   }, [role]);
+
+  // Handle Backup Doctor Change
+  const handleBackupChange = async (e) => {
+    const val = e.target.value;
+    setSelectedBackup(val);
+    try {
+      const res = await fetch(`http://localhost:5000/api/users/${user._id}/backup-doctor`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ backupDoctorId: val }),
+      });
+      if (res.ok) {
+        success("Backup cover updated successfully!");
+        refreshUser();
+      } else {
+        error("Failed to update backup cover.");
+      }
+    } catch (err) {
+      console.error(err);
+      error("Server error. Please try again.");
+    }
+  };
+
+  // Helper stats methods
+  const getWardStats = () => {
+    const stats = {};
+    patients.forEach((p) => {
+      const w = p.ward || "Unassigned";
+      stats[w] = (stats[w] || 0) + 1;
+    });
+    return Object.entries(stats).map(([name, count]) => ({ name, count }));
+  };
+
+  const getDiseaseStats = () => {
+    const stats = {};
+    patients.forEach((p) => {
+      const d = p.disease || "Unknown";
+      stats[d] = (stats[d] || 0) + 1;
+    });
+    return Object.entries(stats).map(([name, count]) => ({ name, count }));
+  };
 
   // 2. Fetch Live Activity (Only for Admin, Limit 3)
   useEffect(() => {
@@ -413,6 +473,112 @@ const DashboardHome = () => {
               </div>
             </WidgetCard>
           )}
+
+          {/* Ward & Patient Statistics (All Roles) */}
+          <WidgetCard>
+            <h3 className="mb-4 text-sm font-bold tracking-wider uppercase text-slate-400 flex items-center gap-2">
+              <Activity size={16} className="text-primary-500" /> Ward & Patient Statistics
+            </h3>
+            {patientCount === 0 ? (
+              <p className="text-slate-500 dark:text-slate-400 text-xs">No active patient records.</p>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase">Patients by Ward</h4>
+                  <div className="space-y-2">
+                    {getWardStats().map(({ name, count }) => {
+                      const percentage = patientCount > 0 ? (count / patientCount) * 100 : 0;
+                      return (
+                        <div key={name} className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
+                            <span>{name}</span>
+                            <span>{count} ({percentage.toFixed(0)}%)</span>
+                          </div>
+                          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-primary-500 h-2 rounded-full transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                  <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase">Conditions Breakdown</h4>
+                  <div className="space-y-2">
+                    {getDiseaseStats().map(({ name, count }) => {
+                      const percentage = patientCount > 0 ? (count / patientCount) * 100 : 0;
+                      return (
+                        <div key={name} className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400">
+                            <span>{name}</span>
+                            <span>{count}</span>
+                          </div>
+                          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-teal-500 h-2 rounded-full transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </WidgetCard>
+
+          {/* Shift Calendar & Rotations (Non-Admins Only) */}
+          {role !== "Admin" && (
+            <WidgetCard>
+              <h3 className="mb-4 text-sm font-bold tracking-wider uppercase text-slate-400 flex items-center gap-2">
+                <Clock size={16} className="text-primary-500" /> Shift Schedule
+              </h3>
+              <div className="space-y-3">
+                <div className="p-3 bg-slate-50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800/80 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">Today's Shift Status</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      {isUserInShift(currentUser) ? "On Duty (Active Access)" : "Off Duty (Outside Shift)"}
+                    </p>
+                  </div>
+                  <span className={`w-3.5 h-3.5 rounded-full ${isUserInShift(currentUser) ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`}></span>
+                </div>
+                
+                <div className="grid grid-cols-7 gap-1 bg-slate-50 dark:bg-slate-950/30 p-2 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+                  {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => {
+                    const isToday = new Date().getDay() === (i === 6 ? 0 : i + 1);
+                    const isWeekend = i >= 5;
+                    return (
+                      <div
+                        key={i}
+                        className={`text-center py-2 rounded-xl text-xs font-bold ${
+                          isToday
+                            ? "bg-primary-600 text-white shadow-md"
+                            : "text-slate-500 dark:text-slate-400"
+                        }`}
+                      >
+                        <div>{d}</div>
+                        <div className="text-[9px] opacity-75 mt-0.5">
+                          {currentUser?.shiftStart && !isWeekend ? "Shift" : "Off"}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="text-[11px] text-slate-400 dark:text-slate-500 space-y-1 font-medium font-medium">
+                  <p>• Shift Hours: Mon - Fri ({currentUser?.shiftStart || "N/A"} to {currentUser?.shiftEnd || "N/A"})</p>
+                  <p>• Access restrictions automatically apply outside shift windows.</p>
+                </div>
+              </div>
+            </WidgetCard>
+          )}
+
         </div>
 
         {/* Right Column: Activity & Staff */}

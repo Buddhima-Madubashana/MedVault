@@ -48,7 +48,30 @@ router.get("/", async (req, res) => {
   try {
     let query = { status: "Pending" };
     if (role === "Nurse") query.nurseId = userId;
-    if (role === "Doctor") query.doctorId = userId;
+    if (role === "Doctor") {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const todayStr = `${year}-${month}-${day}`;
+
+      const LeaveRequest = require("../models/LeaveRequest");
+      const activeLeavesWithBackup = await LeaveRequest.find({
+        status: "Approved",
+        backupDoctor: userId
+      });
+
+      const activeRequesterIds = activeLeavesWithBackup
+        .filter(leave => {
+          const startStr = leave.startDate.toISOString().split("T")[0];
+          const endStr = leave.endDate.toISOString().split("T")[0];
+          return todayStr >= startStr && todayStr <= endStr;
+        })
+        .map(leave => leave.requester);
+
+      const doctorIds = [userId, ...activeRequesterIds];
+      query.doctorId = { $in: doctorIds };
+    }
 
     const requests = await PatientRequest.find(query)
       .populate("nurseId", "name")
@@ -67,7 +90,11 @@ router.post("/:id/approve", async (req, res) => {
     if (!request) return res.status(404).json({ message: "Request not found" });
 
     // Identify Doctor
-    const doctor = await User.findById(request.doctorId);
+    const { actionBy } = req.query;
+    const approver = actionBy ? await User.findById(actionBy) : null;
+    const doctor = approver || await User.findById(request.doctorId);
+    const isBackup = approver && approver._id.toString() !== request.doctorId.toString();
+    const backupNote = isBackup ? ` (Approved via Backup Cover by Dr. ${approver.name})` : "";
 
     if (request.requestType === "Delete") {
       if (request.patientId) await Patient.findByIdAndDelete(request.patientId);
@@ -78,7 +105,7 @@ router.post("/:id/approve", async (req, res) => {
         await logAction(
           doctor,
           "REQUEST_DISCHARGE_APPROVED",
-          `Approved discharge for: ${request.name}`,
+          `Approved discharge for: ${request.name}${backupNote}`,
           req,
         );
         // Notify the Nurse
@@ -86,7 +113,7 @@ router.post("/:id/approve", async (req, res) => {
           recipientId: request.nurseId,
           type: "Request Approved",
           title: "Discharge Approved",
-          message: `Dr. ${doctor.name} approved discharge for ${request.name}`,
+          message: `Dr. ${doctor.name} approved discharge for ${request.name}${backupNote}`,
           link: "/nurse/approvals",
           icon: "check"
         });
@@ -103,7 +130,7 @@ router.post("/:id/approve", async (req, res) => {
         phone: request.phone,
         address: request.address,
         guardianName: request.guardianName,
-        approvedBy: request.doctorId,
+        approvedBy: doctor._id,
       });
       await newPatient.save();
       await PatientRequest.findByIdAndDelete(req.params.id);
@@ -113,7 +140,7 @@ router.post("/:id/approve", async (req, res) => {
         await logAction(
           doctor,
           "REQUEST_ADMISSION_APPROVED",
-          `Approved admission for: ${request.name}`,
+          `Approved admission for: ${request.name}${backupNote}`,
           req,
         );
         // Notify the Nurse
@@ -121,7 +148,7 @@ router.post("/:id/approve", async (req, res) => {
           recipientId: request.nurseId,
           type: "Request Approved",
           title: "Admission Approved",
-          message: `Dr. ${doctor.name} approved admission for ${request.name}`,
+          message: `Dr. ${doctor.name} approved admission for ${request.name}${backupNote}`,
           link: "/nurse/approvals",
           icon: "check"
         });

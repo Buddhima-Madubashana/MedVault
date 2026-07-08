@@ -11,6 +11,7 @@ const auditLogRoutes = require("./routes/auditLogs");
 const systemSettingsRoutes = require("./routes/systemSettings");
 const adminRequestsRoutes = require("./routes/adminRequests");
 const notificationRoutes = require("./routes/notifications");
+const leaveRequestsRoutes = require("./routes/leaveRequests");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -34,6 +35,7 @@ app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/settings", systemSettingsRoutes);
 app.use("/api/admin-requests", adminRequestsRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/leave-requests", leaveRequestsRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

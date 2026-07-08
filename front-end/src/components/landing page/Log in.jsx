@@ -203,6 +203,12 @@ function Login({ onSwitchToSignup }) {
   // Pending login: store the data if mustResetPassword is true
   const [pendingLogin, setPendingLogin] = useState(null); // { user, token }
 
+  // Emergency Request states
+  const [showEmergencyForm, setShowEmergencyForm] = useState(false);
+  const [emergencyReason, setEmergencyReason] = useState("");
+  const [emergencyDuration, setEmergencyDuration] = useState("2");
+  const [emergencySuccess, setEmergencySuccess] = useState("");
+
   const { login, role } = useAuth();
   const navigate = useNavigate();
 
@@ -217,6 +223,7 @@ function Login({ onSwitchToSignup }) {
     e.preventDefault();
     setError("");
     setLoading(true);
+    setEmergencySuccess("");
 
     try {
       const response = await fetch("http://localhost:5000/api/auth/login", {
@@ -228,6 +235,9 @@ function Login({ onSwitchToSignup }) {
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.onLeave) {
+          setShowEmergencyForm(true);
+        }
         throw new Error(data.message || "Login failed");
       }
 
@@ -247,6 +257,38 @@ function Login({ onSwitchToSignup }) {
       }
     } catch (err) {
       setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmergencySubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:5000/api/leave-requests/emergency-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          reason: emergencyReason,
+          durationHours: parseFloat(emergencyDuration),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setEmergencySuccess(data.message);
+        setShowEmergencyForm(false);
+        setEmergencyReason("");
+      } else {
+        setError(data.error || "Failed to submit emergency request.");
+      }
+    } catch (err) {
+      setError("Server error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -294,56 +336,133 @@ function Login({ onSwitchToSignup }) {
           </div>
         )}
 
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-              Provider Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="dr.smith@hospital.org"
-              required
-              className="w-full px-4 py-3 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 focus:ring-2 focus:ring-primary-500 dark:text-white transition-all"
-            />
+        {emergencySuccess && (
+          <div className="p-4 text-sm font-medium text-emerald-700 bg-emerald-50 rounded-2xl dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-950/50 animate-fade-in">
+            {emergencySuccess}
           </div>
+        )}
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Password
-              </label>
+        {showEmergencyForm ? (
+          <form className="space-y-5" onSubmit={handleEmergencySubmit}>
+            <div className="space-y-1 text-center">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">Emergency Request</h2>
+              <p className="text-xs text-slate-500">Provide details to request temporary access.</p>
             </div>
-            <div className="relative">
+            
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Email Address
+              </label>
               <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                type="email"
+                value={email}
+                disabled
+                className="w-full px-4 py-3 text-sm bg-slate-100 border rounded-xl outline-none border-slate-200 dark:border-slate-800 dark:bg-slate-950/80 dark:text-slate-400 opacity-80"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Access Duration
+              </label>
+              <select
+                value={emergencyDuration}
+                onChange={(e) => setEmergencyDuration(e.target.value)}
+                className="w-full px-4 py-3 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="1">1 Hour</option>
+                <option value="2">2 Hours</option>
+                <option value="4">4 Hours</option>
+                <option value="8">8 Hours</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Emergency Justification
+              </label>
+              <textarea
+                value={emergencyReason}
+                onChange={(e) => setEmergencyReason(e.target.value)}
+                rows={3}
+                placeholder="Enter justification for emergency access..."
+                required
+                className="w-full px-4 py-3 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEmergencyForm(false);
+                  setError("");
+                }}
+                className="flex-1 py-2.5 px-4 text-sm border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl transition-all cursor-pointer text-center"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 py-2.5 px-4 text-sm bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl transition-all shadow-md disabled:opacity-50 cursor-pointer"
+              >
+                {loading ? "Submitting..." : "Send Request"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Provider Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="dr.smith@hospital.org"
                 required
                 className="w-full px-4 py-3 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 focus:ring-2 focus:ring-primary-500 dark:text-white transition-all"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute transition-colors -translate-y-1/2 right-4 top-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-              >
-                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-              </button>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full px-4 py-3.5 text-sm font-bold transition-all rounded-xl shadow-lg bg-primary-600 text-white hover:bg-primary-700 shadow-primary-500/30 disabled:opacity-50 disabled:shadow-none"
-          >
-            {loading ? "Authenticating..." : "Secure Login"}
-          </button>
-        </form>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  Password
+                </label>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  className="w-full px-4 py-3 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 focus:ring-2 focus:ring-primary-500 dark:text-white transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute transition-colors -translate-y-1/2 right-4 top-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full px-4 py-3.5 text-sm font-bold transition-all rounded-xl shadow-lg bg-primary-600 text-white hover:bg-primary-700 shadow-primary-500/30 disabled:opacity-50 disabled:shadow-none"
+            >
+              {loading ? "Authenticating..." : "Secure Login"}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

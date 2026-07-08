@@ -6,6 +6,7 @@ const User = require("../models/User");
 const Notification = require("../models/Notification");
 const SystemSettings = require("../models/SystemSettings");
 const { logAction } = require("../utils/logger");
+const { checkUserLeaveStatus } = require("../utils/leaveChecker");
 
 // Helper: fetch the active system settings (returns defaults if none saved)
 async function getSettings() {
@@ -99,6 +100,21 @@ router.post("/login", async (req, res) => {
           });
       }
       return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // Check Leave Status
+    const leaveStatus = await checkUserLeaveStatus(user._id);
+    if (leaveStatus.onLeave && !leaveStatus.overrideActive) {
+      await logAction(
+        user,
+        "LOGIN_BLOCKED",
+        "Attempted login while on approved leave without active emergency override",
+        req
+      );
+      return res.status(403).json({
+        message: "Access Denied: You are currently on leave. Contact administrator for emergency access override.",
+        onLeave: true,
+      });
     }
 
     // Reset Lockout Counters
