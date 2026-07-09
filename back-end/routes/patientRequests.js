@@ -49,28 +49,7 @@ router.get("/", async (req, res) => {
     let query = { status: "Pending" };
     if (role === "Nurse") query.nurseId = userId;
     if (role === "Doctor") {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const day = String(now.getDate()).padStart(2, "0");
-      const todayStr = `${year}-${month}-${day}`;
-
-      const LeaveRequest = require("../models/LeaveRequest");
-      const activeLeavesWithBackup = await LeaveRequest.find({
-        status: "Approved",
-        backupDoctor: userId
-      });
-
-      const activeRequesterIds = activeLeavesWithBackup
-        .filter(leave => {
-          const startStr = leave.startDate.toISOString().split("T")[0];
-          const endStr = leave.endDate.toISOString().split("T")[0];
-          return todayStr >= startStr && todayStr <= endStr;
-        })
-        .map(leave => leave.requester);
-
-      const doctorIds = [userId, ...activeRequesterIds];
-      query.doctorId = { $in: doctorIds };
+      query.doctorId = userId;
     }
 
     const requests = await PatientRequest.find(query)

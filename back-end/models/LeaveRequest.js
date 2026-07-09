@@ -28,10 +28,6 @@ const leaveRequestSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
-    backupDoctor: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
     emergencyOverride: {
       isActive: { type: Boolean, default: false },
       reason: { type: String, default: "" },

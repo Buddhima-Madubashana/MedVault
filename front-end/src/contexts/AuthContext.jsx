@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [loading, setLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   // Helper to safely check token validity
   const checkTokenExpiration = (token) => {
@@ -37,8 +38,11 @@ export const AuthProvider = ({ children }) => {
         );
 
         const timer = setTimeout(() => {
-          alert("Session expired. Please log in again.");
-          logout();
+          setSessionExpired(true);
+          setTimeout(() => {
+            setSessionExpired(false);
+            logout();
+          }, 5000);
         }, safeTimeLeft);
 
         return timer;
@@ -124,6 +128,69 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{ user, role, token, login, logout, loading }}>
       {!loading && children}
+
+      {/* Session Expired Overlay */}
+      {sessionExpired && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md"
+          style={{ animation: "fadeIn 0.3s ease-out" }}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center space-y-5"
+            style={{ animation: "scaleIn 0.35s ease-out" }}
+          >
+            {/* Clock Icon */}
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/30 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                Session Expired
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                Your session has timed out for security reasons. You will be redirected to the login page shortly.
+              </p>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-amber-400 to-rose-500 rounded-full"
+                style={{ animation: "shrink 5s linear forwards", width: "100%" }}
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                setSessionExpired(false);
+                logout();
+              }}
+              className="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md cursor-pointer"
+            >
+              Return to Login
+            </button>
+          </div>
+
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes scaleIn {
+              from { opacity: 0; transform: scale(0.9); }
+              to { opacity: 1; transform: scale(1); }
+            }
+            @keyframes shrink {
+              from { width: 100%; }
+              to { width: 0%; }
+            }
+          `}</style>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 };

@@ -52,11 +52,6 @@ const AdminLeaves = () => {
 
   const handleOverrideSubmit = async (e) => {
     e.preventDefault();
-    if (!overrideReason.trim()) {
-      setError("Override reason is required.");
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -89,17 +84,51 @@ const AdminLeaves = () => {
     }
   };
 
+  const handleRevokeOverride = async (id) => {
+    if (!window.confirm("Are you sure you want to revoke emergency override access for this user?")) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/leave-requests/${id}/revoke-override`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        fetchRequests();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Revocation failed.");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // Group requests
   const pendingRequests = requests.filter((r) => r.status === "Pending");
+
+  // Timezone-safe calendar-day comparison (matches backend leaveChecker.js)
+  const getTodayStr = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getTodayStr();
+
   const approvedLeaves = requests.filter((r) => {
     if (r.status !== "Approved") return false;
-    const now = new Date();
-    return new Date(r.startDate) <= now && new Date(r.endDate) >= now;
+    const startStr = new Date(r.startDate).toISOString().split("T")[0];
+    const endStr = new Date(r.endDate).toISOString().split("T")[0];
+    return todayStr >= startStr && todayStr <= endStr;
   });
+
   const pastOrFutureLeaves = requests.filter((r) => {
     if (r.status !== "Approved") return r.status === "Rejected";
-    const now = new Date();
-    return new Date(r.startDate) > now || new Date(r.endDate) < now;
+    const startStr = new Date(r.startDate).toISOString().split("T")[0];
+    const endStr = new Date(r.endDate).toISOString().split("T")[0];
+    return todayStr < startStr || todayStr > endStr;
   });
 
   return (
@@ -238,17 +267,26 @@ const AdminLeaves = () => {
                   )}
                 </div>
 
-                <button
-                  onClick={() => {
-                    setSelectedRequest(req);
-                    setOverrideReason(req.emergencyRequest?.isRequested ? req.emergencyRequest.reason : "");
-                    setOverrideDuration(req.emergencyRequest?.isRequested ? String(req.emergencyRequest.durationHours) : "2");
-                    setShowOverrideModal(true);
-                  }}
-                  className="py-2.5 px-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0 self-start md:self-center cursor-pointer"
-                >
-                  <Key size={16} /> Grant Emergency Access
-                </button>
+                {req.emergencyOverride?.isActive ? (
+                  <button
+                    onClick={() => handleRevokeOverride(req._id)}
+                    className="py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0 self-start md:self-center cursor-pointer"
+                  >
+                    <XCircle size={16} /> Revoke Override
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setSelectedRequest(req);
+                      setOverrideReason(req.emergencyRequest?.isRequested ? req.emergencyRequest.reason : "");
+                      setOverrideDuration(req.emergencyRequest?.isRequested ? String(req.emergencyRequest.durationHours) : "2");
+                      setShowOverrideModal(true);
+                    }}
+                    className="py-2.5 px-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0 self-start md:self-center cursor-pointer"
+                  >
+                    <Key size={16} /> Grant Emergency Access
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -295,19 +333,7 @@ const AdminLeaves = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Emergency Justification (Reason)
-                </label>
-                <textarea
-                  value={overrideReason}
-                  onChange={(e) => setOverrideReason(e.target.value)}
-                  rows={3}
-                  placeholder="Mandatory audit explanation..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 resize-none"
-                  required
-                ></textarea>
-              </div>
+
 
               <div className="flex gap-3 pt-2">
                 <button

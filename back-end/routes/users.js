@@ -175,22 +175,4 @@ router.put("/:id/shift", async (req, res) => {
   }
 });
 
-// Update User Backup Doctor
-router.put("/:id/backup-doctor", async (req, res) => {
-  try {
-    const { backupDoctorId } = req.body;
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    user.backupDoctor = backupDoctorId || null;
-    await user.save();
-
-    await logAction(user, "BACKUP_DOCTOR_UPDATE", `Backup doctor updated to: ${backupDoctorId || "None"}`, req);
-
-    res.json({ message: "Backup doctor updated successfully", user });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 module.exports = router;

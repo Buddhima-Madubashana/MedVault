@@ -3,13 +3,11 @@ import { Calendar, AlertCircle, FileText, CheckCircle2, XCircle, Clock } from "l
 import { useAuth } from "../../contexts/AuthContext";
 
 const LeaveManagement = () => {
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   const [leaves, setLeaves] = useState([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
-  const [doctors, setDoctors] = useState([]);
-  const [backupDoctor, setBackupDoctor] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -33,14 +31,7 @@ const LeaveManagement = () => {
     }
   }, [token]);
 
-  useEffect(() => {
-    if (token && user && user.role === "Doctor") {
-      fetch("http://localhost:5000/api/users/doctors")
-        .then((res) => res.json())
-        .then((data) => setDoctors(data.filter((d) => d._id !== user._id)))
-        .catch((err) => console.error("Failed to fetch doctors:", err));
-    }
-  }, [token, user]);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,12 +50,7 @@ const LeaveManagement = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          startDate,
-          endDate,
-          reason,
-          backupDoctor: user?.role === "Doctor" ? backupDoctor || undefined : undefined,
-        }),
+        body: JSON.stringify({ startDate, endDate, reason }),
       });
 
       const data = await res.json();
@@ -74,7 +60,6 @@ const LeaveManagement = () => {
         setStartDate("");
         setEndDate("");
         setReason("");
-        setBackupDoctor("");
         fetchLeaves();
       } else {
         setMessage({ type: "error", text: data.error || "Failed to submit request." });
@@ -181,25 +166,6 @@ const LeaveManagement = () => {
                 required
               ></textarea>
             </div>
-            {user?.role === "Doctor" && (
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Backup Cover Doctor
-                </label>
-                <select
-                  value={backupDoctor}
-                  onChange={(e) => setBackupDoctor(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors text-sm font-medium"
-                >
-                  <option value="">No Backup Cover</option>
-                  {doctors.map((d) => (
-                    <option key={d._id} value={d._id}>
-                      Dr. {d.name} ({d.specialty || "General"})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             <button
               type="submit"
@@ -245,11 +211,7 @@ const LeaveManagement = () => {
                       <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
                         Reason: {leave.reason}
                       </p>
-                      {leave.backupDoctor && (
-                        <p className="text-xs text-slate-500 dark:text-slate-455">
-                          Backup Cover: Dr. {leave.backupDoctor.name} ({leave.backupDoctor.specialty || "General"})
-                        </p>
-                      )}
+
                       {leave.approvedBy && (
                         <p className="text-xs text-slate-400 dark:text-slate-500">
                           Reviewed by: {leave.approvedBy.name}

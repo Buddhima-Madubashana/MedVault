@@ -13,6 +13,10 @@ import {
   UserPlus,
   AlertTriangle,
   Lock,
+  ClipboardList,
+  PlusCircle,
+  CheckSquare,
+  Check,
 } from "lucide-react";
 
 // Greeting Logic
@@ -48,17 +52,13 @@ const DashboardHome = () => {
   const [patientCount, setPatientCount] = useState(0);
   const { success, error } = useToast();
 
-  // New States
   const [patients, setPatients] = useState([]);
   const [allDoctors, setAllDoctors] = useState([]);
-  const [selectedBackup, setSelectedBackup] = useState(user?.backupDoctor || "");
-
-  // Update selectedBackup when currentUser updates
-  useEffect(() => {
-    if (currentUser) {
-      setSelectedBackup(currentUser.backupDoctor || "");
-    }
-  }, [currentUser]);
+  const [tasks, setTasks] = useState([]);
+  const [allNurses, setAllNurses] = useState([]);
+  const [selectedNurse, setSelectedNurse] = useState("");
+  const [selectedPatient, setSelectedPatient] = useState("");
+  const [taskDesc, setTaskDesc] = useState("");
 
   // 0. Fetch Fresh User Data (for Permission Status)
   const refreshUser = async () => {
@@ -117,16 +117,102 @@ const DashboardHome = () => {
     }
   };
 
+  const fetchTasks = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("http://localhost:5000/api/tasks", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch tasks:", err);
+    }
+  };
+
+  const handleAssignTask = async (e) => {
+    e.preventDefault();
+    if (!selectedNurse || !taskDesc.trim()) {
+      error("Nurse and description are required.");
+      return;
+    }
+    try {
+      const res = await fetch("http://localhost:5000/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          assignedTo: selectedNurse,
+          patientId: selectedPatient || undefined,
+          description: taskDesc,
+        }),
+      });
+      if (res.ok) {
+        success("Task assigned successfully!");
+        setTaskDesc("");
+        setSelectedPatient("");
+        setSelectedNurse("");
+        fetchTasks();
+      } else {
+        const data = await res.json();
+        error(data.error || "Failed to assign task.");
+      }
+    } catch (err) {
+      console.error(err);
+      error("Server error. Please try again.");
+    }
+  };
+
+  const handleCompleteTask = async (taskId) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/tasks/${taskId}/complete`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        success("Task marked as completed!");
+        fetchTasks();
+      } else {
+        const data = await res.json();
+        error(data.error || "Failed to complete task.");
+      }
+    } catch (err) {
+      console.error(err);
+      error("Server error. Please try again.");
+    }
+  };
+
   useEffect(() => {
     refreshUser();
     fetchPatientCount();
+    if (role === "Doctor" || role === "Nurse") {
+      fetchTasks();
+    }
     // Poll every 5 seconds to immediately catch admin changes
     const interval = setInterval(() => {
       refreshUser();
       fetchPatientCount();
+      if (role === "Doctor" || role === "Nurse") {
+        fetchTasks();
+      }
     }, 5000);
     return () => clearInterval(interval);
-  }, [user, token]);
+  }, [user, token, role]);
+
+  useEffect(() => {
+    if (token && role === "Doctor") {
+      fetch("http://localhost:5000/api/users/nurses", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => setAllNurses(data))
+        .catch((err) => console.error("Failed to load nurses:", err));
+    }
+  }, [token, role]);
 
   // Countdown Helper
   useEffect(() => {
@@ -196,31 +282,6 @@ const DashboardHome = () => {
         .catch((err) => console.error(err));
     }
   }, [role]);
-
-  // Handle Backup Doctor Change
-  const handleBackupChange = async (e) => {
-    const val = e.target.value;
-    setSelectedBackup(val);
-    try {
-      const res = await fetch(`http://localhost:5000/api/users/${user._id}/backup-doctor`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ backupDoctorId: val }),
-      });
-      if (res.ok) {
-        success("Backup cover updated successfully!");
-        refreshUser();
-      } else {
-        error("Failed to update backup cover.");
-      }
-    } catch (err) {
-      console.error(err);
-      error("Server error. Please try again.");
-    }
-  };
 
   // Helper stats methods
   const getWardStats = () => {
@@ -651,6 +712,183 @@ const DashboardHome = () => {
           {/* Active Staff Lists (NON-ADMIN ONLY) */}
           {role !== "Admin" && (
             <>
+              {/* Doctor Task Assignment & Tracker */}
+              {role === "Doctor" && (
+                <>
+                  <WidgetCard>
+                    <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+                      <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                        <ClipboardList size={20} className="text-primary-500" /> Assign Task to Nurse
+                      </h3>
+                    </div>
+                    <form onSubmit={handleAssignTask} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Select Nurse</label>
+                        <select
+                          value={selectedNurse}
+                          onChange={(e) => setSelectedNurse(e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-sm font-medium"
+                          required
+                        >
+                          <option value="">-- Choose Nurse --</option>
+                          {allNurses.map((n) => (
+                            <option key={n._id} value={n._id}>
+                              Nurse {n.name} ({n.ward || "General"})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Select Patient (Optional)</label>
+                        <select
+                          value={selectedPatient}
+                          onChange={(e) => setSelectedPatient(e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-sm font-medium"
+                        >
+                          <option value="">No Patient (General Task)</option>
+                          {patients.map((p) => (
+                            <option key={p._id} value={p._id}>
+                              Patient: {p.name} (Ward: {p.ward})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Task Description</label>
+                        <input
+                          type="text"
+                          value={taskDesc}
+                          onChange={(e) => setTaskDesc(e.target.value)}
+                          placeholder="e.g. Check vitals / check how much medicine is left"
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 text-sm font-medium"
+                          required
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-2.5 px-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer mt-2"
+                      >
+                        <PlusCircle size={16} /> Assign Task
+                      </button>
+                    </form>
+                  </WidgetCard>
+
+                  <WidgetCard>
+                    <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+                      <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                        <Activity size={20} className="text-emerald-500" /> Assigned Tasks Status Tracker
+                      </h3>
+                    </div>
+                    <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+                      {tasks.length > 0 ? (
+                        tasks.map((task) => (
+                          <div
+                            key={task._id}
+                            className="p-3.5 border rounded-xl bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 flex justify-between items-start gap-3"
+                          >
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight">
+                                {task.description}
+                              </p>
+                              <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500">
+                                <span>Nurse: {task.assignedTo?.name || "Unknown"}</span>
+                                {task.patientId && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-primary-600 dark:text-primary-400">Patient: {task.patientId.name}</span>
+                                  </>
+                                )}
+                              </div>
+                              {task.completedAt && (
+                                <p className="text-[10px] text-slate-400">
+                                  Completed: {new Date(task.completedAt).toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                                task.status === "Completed"
+                                  ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400"
+                                  : "bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400"
+                              }`}
+                            >
+                              {task.status}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-slate-500 dark:text-slate-400 text-xs py-2">No tasks assigned yet.</p>
+                      )}
+                    </div>
+                  </WidgetCard>
+                </>
+              )}
+
+              {/* Nurse Task Checklist */}
+              {role === "Nurse" && (
+                <WidgetCard>
+                  <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+                    <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                      <CheckSquare size={20} className="text-primary-500" /> My Assigned Tasks
+                    </h3>
+                  </div>
+                  <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+                    {tasks.length > 0 ? (
+                      tasks.map((task) => (
+                        <div
+                          key={task._id}
+                          className="p-3.5 border rounded-xl bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 flex items-start gap-3 transition-all hover:bg-slate-100/50 dark:hover:bg-slate-800"
+                        >
+                          {task.status === "Pending" ? (
+                            <button
+                              onClick={() => handleCompleteTask(task._id)}
+                              className="mt-0.5 w-5 h-5 rounded-md border-2 border-slate-300 dark:border-slate-600 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center justify-center transition-all shrink-0 cursor-pointer text-transparent hover:text-emerald-600 dark:hover:text-emerald-400"
+                              title="Mark as completed"
+                            >
+                              <Check size={14} className="stroke-[3]" />
+                            </button>
+                          ) : (
+                            <div className="mt-0.5 w-5 h-5 rounded-md bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                              <Check size={14} className="stroke-[3]" />
+                            </div>
+                          )}
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <p
+                              className={`text-sm font-bold leading-tight ${
+                                task.status === "Completed"
+                                  ? "text-slate-400 dark:text-slate-500 line-through font-normal"
+                                  : "text-slate-800 dark:text-white"
+                              }`}
+                            >
+                              {task.description}
+                            </p>
+                            <div className="flex flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500">
+                              <span>By: Dr. {task.assignedBy?.name || "Unknown"}</span>
+                              {task.patientId && (
+                                <>
+                                  <span>•</span>
+                                  <span className="text-primary-600 dark:text-primary-400">Patient: {task.patientId.name}</span>
+                                </>
+                              )}
+                            </div>
+                            {task.completedAt && (
+                              <p className="text-[10px] text-slate-400">
+                                Completed: {new Date(task.completedAt).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-slate-500 dark:text-slate-400 text-xs py-2">No tasks assigned to you.</p>
+                    )}
+                  </div>
+                </WidgetCard>
+              )}
+
               {/* Doctors On Call */}
               <WidgetCard>
                 <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
