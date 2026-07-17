@@ -13,16 +13,7 @@ import Notification from "../../components/Notification";
 import { useAuth } from "../../contexts/AuthContext";
 import { isUserInShift } from "../../utils/shiftHelper";
 
-const statusBadgeStyle = (status) => {
-  const map = {
-    Stable: "bg-green-100 text-green-700 border border-green-200",
-    Recovering: "bg-blue-100 text-blue-700 border border-blue-200",
-    "Under Observation": "bg-yellow-100 text-yellow-700 border border-yellow-200",
-    Critical: "bg-red-100 text-red-700 border border-red-200",
-    Discharged: "bg-slate-100 text-slate-500 border border-slate-200",
-  };
-  return map[status] || map["Stable"];
-};
+
 
 const PatientRecords = () => {
   const { user, role, token } = useAuth();
@@ -271,10 +262,7 @@ const PatientRecords = () => {
             key={patient._id}
             className="relative p-6 transition-all bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-soft dark:bg-slate-800/80 rounded-3xl dark:border-slate-700/60 group hover:shadow-glass hover:-translate-y-1"
           >
-            <div className="flex justify-between mb-4">
-              <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-bold ${statusBadgeStyle(patient.status || "Stable")}`}>
-                {patient.status || "Stable"}
-              </span>
+            <div className="flex justify-end mb-4">
               {!isUserInShift(user) ? (
                 <span 
                   className="text-slate-300 p-1.5 cursor-not-allowed opacity-60" 
@@ -325,7 +313,7 @@ const PatientRecords = () => {
               </div>
             </div>
             <button
-              onClick={() => navigate(`${patient._id}`)}
+              onClick={() => navigate(`/${role.toLowerCase()}/patients/${patient._id}`)}
               className="w-full py-2.5 rounded-xl border border-primary-200 dark:border-primary-900/50 text-primary-600 dark:text-primary-400 font-bold text-sm hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all flex items-center justify-center gap-2"
             >
               <FileText size={16} /> View Full Record

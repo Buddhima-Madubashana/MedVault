@@ -30,9 +30,9 @@ const patientSchema = new mongoose.Schema(
 
     // Current vitals (editable by Doctor and Nurse)
     vitals: {
-      heartRate: { type: String, default: "72 bpm" },
-      bloodPressure: { type: String, default: "120/80" },
-      temperature: { type: String, default: "98.6 °F" },
+      heartRate: { type: String },
+      bloodPressure: { type: String },
+      temperature: { type: String },
     },
 
     // Treatment timeline entries added by doctors

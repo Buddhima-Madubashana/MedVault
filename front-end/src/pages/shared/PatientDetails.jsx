@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -11,7 +11,6 @@ import {
   Check,
   X,
   Plus,
-  ChevronDown,
   Stethoscope,
   Lock,
 } from "lucide-react";
@@ -20,25 +19,7 @@ import { isUserInShift } from "../../utils/shiftHelper";
 import { AnimatePresence, motion } from "framer-motion";
 import Notification from "../../components/Notification";
 
-// --- Status config ---
-const STATUS_OPTIONS = [
-  { value: "Stable", color: "green", dot: "bg-green-500" },
-  { value: "Recovering", color: "blue", dot: "bg-blue-500" },
-  { value: "Under Observation", color: "yellow", dot: "bg-yellow-500" },
-  { value: "Critical", color: "red", dot: "bg-red-500" },
-  { value: "Discharged", color: "slate", dot: "bg-slate-400" },
-];
 
-const statusStyle = (status) => {
-  const map = {
-    Stable: "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
-    Recovering: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
-    "Under Observation": "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800",
-    Critical: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
-    Discharged: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600",
-  };
-  return map[status] || map["Stable"];
-};
 
 const PatientDetails = () => {
   const { id } = useParams();
@@ -50,15 +31,6 @@ const PatientDetails = () => {
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
-
-  // --- Medical History edit state ---
-  const [editingHistory, setEditingHistory] = useState(false);
-  const [historyDraft, setHistoryDraft] = useState("");
-
-  // --- Status edit state ---
-  const [editingStatus, setEditingStatus] = useState(false);
-  const [statusDraft, setStatusDraft] = useState("");
-  const statusDropdownRef = useRef(null);
 
   // --- Timeline state ---
   const [showAddTimeline, setShowAddTimeline] = useState(false);
@@ -85,9 +57,11 @@ const PatientDetails = () => {
       })
       .then((data) => {
         setPatient(data);
-        setHistoryDraft(data.medicalHistory || "");
-        setStatusDraft(data.status || "Stable");
-        setVitalsDraft(data.vitals || { heartRate: "72 bpm", bloodPressure: "120/80", temperature: "98.6 °F" });
+        setVitalsDraft({
+          heartRate: data.vitals?.heartRate || "",
+          bloodPressure: data.vitals?.bloodPressure || "",
+          temperature: data.vitals?.temperature || "",
+        });
         setLoading(false);
       })
       .catch((err) => {
@@ -99,17 +73,6 @@ const PatientDetails = () => {
   useEffect(() => {
     fetchPatient();
   }, [id, token]);
-
-  // Close status dropdown on outside click
-  useEffect(() => {
-    const handler = (e) => {
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target)) {
-        setEditingStatus(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   // --- PATCH helper ---
   const patchPatient = async (payload) => {
@@ -128,30 +91,9 @@ const PatientDetails = () => {
     return res.json();
   };
 
-  // --- Save Medical History ---
-  const saveHistory = async () => {
-    try {
-      const updated = await patchPatient({ medicalHistory: historyDraft });
-      setPatient(updated);
-      setEditingHistory(false);
-      showNotification("success", "Saved", "Medical history updated.");
-    } catch (err) {
-      showNotification("error", "Error", err.message);
-    }
-  };
+  // --- Save Medical History (removed) ---
 
-  // --- Save Status ---
-  const saveStatus = async (newStatus) => {
-    try {
-      const updated = await patchPatient({ status: newStatus });
-      setPatient(updated);
-      setStatusDraft(newStatus);
-      setEditingStatus(false);
-      showNotification("success", "Updated", `Status changed to ${newStatus}.`);
-    } catch (err) {
-      showNotification("error", "Error", err.message);
-    }
-  };
+  // --- Save Status (removed) ---
 
   // --- Add Timeline Entry ---
   const addTimelineEntry = async () => {
@@ -178,6 +120,11 @@ const PatientDetails = () => {
     try {
       const updated = await patchPatient({ vitals: vitalsDraft });
       setPatient(updated);
+      setVitalsDraft({
+        heartRate: updated.vitals?.heartRate || "",
+        bloodPressure: updated.vitals?.bloodPressure || "",
+        temperature: updated.vitals?.temperature || "",
+      });
       setEditingVitals(false);
       showNotification("success", "Updated", "Vitals updated successfully.");
     } catch (err) {
@@ -196,7 +143,6 @@ const PatientDetails = () => {
       <div className="p-10 text-center text-red-500">Patient not found.</div>
     );
 
-  const currentStatus = patient.status || "Stable";
   const timeline = patient.treatmentTimeline || [];
 
   return (
@@ -235,48 +181,6 @@ const PatientDetails = () => {
                   <span className="font-mono">{patient._id}</span>
                 </p>
               </div>
-
-              {/* ── Status Badge / Editable ── */}
-              {isDoctor ? (
-                <div className="relative" ref={statusDropdownRef}>
-                  <button
-                    onClick={() => setEditingStatus(!editingStatus)}
-                    className={`flex items-center gap-2 px-4 py-2 font-bold rounded-xl border transition-all ${statusStyle(currentStatus)}`}
-                  >
-                    {currentStatus}
-                    <ChevronDown size={16} className={`transition-transform ${editingStatus ? "rotate-180" : ""}`} />
-                  </button>
-                  <AnimatePresence>
-                    {editingStatus && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                        className="absolute right-0 top-12 z-50 w-52 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden"
-                      >
-                        <p className="text-xs font-bold uppercase text-slate-400 px-4 pt-3 pb-1 tracking-wider">
-                          Change Status
-                        </p>
-                        {STATUS_OPTIONS.map((opt) => (
-                          <button
-                            key={opt.value}
-                            onClick={() => saveStatus(opt.value)}
-                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${opt.value === currentStatus ? "opacity-50 cursor-default" : ""}`}
-                            disabled={opt.value === currentStatus}
-                          >
-                            <span className={`w-2 h-2 rounded-full ${opt.dot}`} />
-                            {opt.value}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ) : (
-                <span className={`px-4 py-2 font-bold rounded-xl border ${statusStyle(currentStatus)}`}>
-                  {currentStatus}
-                </span>
-              )}
             </div>
 
             <div className="grid grid-cols-2 gap-6 mt-8 md:grid-cols-4">
@@ -314,7 +218,11 @@ const PatientDetails = () => {
                 isUserInShift(user) ? (
                   <button
                     onClick={() => {
-                      setVitalsDraft(patient.vitals || { heartRate: "72 bpm", bloodPressure: "120/80", temperature: "98.6 °F" });
+                      setVitalsDraft({
+                        heartRate: patient.vitals?.heartRate || "",
+                        bloodPressure: patient.vitals?.bloodPressure || "",
+                        temperature: patient.vitals?.temperature || "",
+                      });
                       setEditingVitals(true);
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg transition-colors"
@@ -330,14 +238,19 @@ const PatientDetails = () => {
             </div>
             {editingVitals ? (
               <div className="space-y-3">
-                {[["Heart Rate", "heartRate"], ["Blood Pressure", "bloodPressure"], ["Temperature", "temperature"]].map(([label, key]) => (
+                {[
+                  ["Heart Rate", "heartRate", "e.g. 72 bpm"],
+                  ["Blood Pressure", "bloodPressure", "e.g. 120/80"],
+                  ["Temperature", "temperature", "e.g. 98.6 °F"],
+                ].map(([label, key, ph]) => (
                   <div key={key} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
                     <span className="text-sm font-medium text-slate-500">{label}</span>
                     <input
                       type="text"
                       value={vitalsDraft[key] || ""}
+                      placeholder={ph}
                       onChange={(e) => setVitalsDraft({ ...vitalsDraft, [key]: e.target.value })}
-                      className="w-32 px-3 py-1.5 text-sm font-bold text-right bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-red-400 text-slate-900 dark:text-white"
+                      className="w-36 px-3 py-1.5 text-sm font-bold text-right bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-2 focus:ring-red-400 text-slate-900 dark:text-white placeholder-slate-300 dark:placeholder-slate-600"
                     />
                   </div>
                 ))}
@@ -359,10 +272,16 @@ const PatientDetails = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {[["Heart Rate", patient.vitals?.heartRate || "72 bpm"], ["Blood Pressure", patient.vitals?.bloodPressure || "120/80"], ["Temperature", patient.vitals?.temperature || "98.6 °F"]].map(([label, val]) => (
+                {[
+                  ["Heart Rate", patient.vitals?.heartRate],
+                  ["Blood Pressure", patient.vitals?.bloodPressure],
+                  ["Temperature", patient.vitals?.temperature],
+                ].map(([label, val]) => (
                   <div key={label} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl">
                     <span className="text-sm font-medium text-slate-500">{label}</span>
-                    <span className="text-lg font-bold text-slate-900 dark:text-white">{val}</span>
+                    <span className={`text-lg font-bold ${val ? "text-slate-900 dark:text-white" : "text-slate-300 dark:text-slate-600"}`}>
+                      {val || "—"}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -393,86 +312,37 @@ const PatientDetails = () => {
         {/* Right Column: Medical History + Timeline */}
         <div className="space-y-6 md:col-span-2">
 
-          {/* ── Medical History ── */}
+          {/* ── Patient Notes (read-only) ── */}
           <div className="p-6 bg-white/80 backdrop-blur-md border shadow-soft dark:bg-slate-800/80 rounded-3xl border-slate-200/60 dark:border-slate-700/60">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 mb-4">
               <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                <FileText className="text-primary-500" size={20} /> Medical History
+                <FileText className="text-primary-500" size={20} /> Patient Notes
               </h3>
-              {isDoctor && !editingHistory && (
-                isUserInShift(user) ? (
-                  <button
-                    onClick={() => {
-                      setHistoryDraft(patient.medicalHistory || "");
-                      setEditingHistory(true);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/40 rounded-lg transition-colors"
-                  >
-                    <Edit3 size={13} /> Edit
-                  </button>
-                ) : (
-                  <span className="flex items-center gap-1 text-xs text-slate-400 font-semibold" title="Access Blocked: Editing medical history is restricted outside active shift hours.">
-                    <Lock size={12} /> Out of Shift
-                  </span>
-                )
-              )}
-              {!isDoctor && (
-                <span className="flex items-center gap-1 text-xs text-slate-400">
-                  <Lock size={12} /> Doctor only
-                </span>
-              )}
             </div>
 
-            {editingHistory ? (
-              <div className="space-y-3">
-                <textarea
-                  className="w-full px-4 py-3 rounded-xl border border-primary-300 bg-primary-50/30 dark:bg-slate-900 dark:border-primary-700 dark:text-white text-slate-800 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-                  rows={6}
-                  value={historyDraft}
-                  onChange={(e) => setHistoryDraft(e.target.value)}
-                  placeholder="Enter detailed medical history, notes, and observations..."
-                  autoFocus
-                />
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => setEditingHistory(false)}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors"
-                  >
-                    <X size={15} /> Cancel
-                  </button>
-                  <button
-                    onClick={saveHistory}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-md shadow-primary-500/20 transition-colors"
-                  >
-                    <Check size={15} /> Save Changes
-                  </button>
+            <div className="space-y-3">
+              {patient.medicalHistory && patient.medicalHistory.trim() ? (
+                <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                  {patient.medicalHistory}
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {patient.medicalHistory && patient.medicalHistory.trim() ? (
-                  <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
-                    {patient.medicalHistory}
-                  </div>
-                ) : (
-                  <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400 italic">
-                    Patient admitted with symptoms of {patient.disease}. Initial assessment shows stable vitals.
-                    Requires monitoring and standard treatment protocol.
-                  </div>
-                )}
-                {/* Always show admission metadata — never wiped by history edits */}
-                <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 space-y-1">
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    <strong className="text-slate-600 dark:text-slate-300">Admitted By:</strong>{" "}
-                    {patient.approvedBy?.name ? `Dr. ${patient.approvedBy.name}` : "System Admin"}
-                  </p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    <strong className="text-slate-600 dark:text-slate-300">Admission Date:</strong>{" "}
-                    {new Date(patient.createdAt).toLocaleDateString()}
-                  </p>
+              ) : (
+                <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400 italic">
+                  Patient admitted with symptoms of {patient.disease}. Initial assessment shows stable vitals.
+                  Requires monitoring and standard treatment protocol.
                 </div>
+              )}
+              {/* Always show admission metadata */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 space-y-1">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  <strong className="text-slate-600 dark:text-slate-300">Admitted By:</strong>{" "}
+                  {patient.approvedBy?.name ? `Dr. ${patient.approvedBy.name}` : "System Admin"}
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  <strong className="text-slate-600 dark:text-slate-300">Admission Date:</strong>{" "}
+                  {new Date(patient.createdAt).toLocaleDateString()}
+                </p>
               </div>
-            )}
+            </div>
 
           </div>
 

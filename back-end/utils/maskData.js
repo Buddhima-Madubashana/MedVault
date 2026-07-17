@@ -27,12 +27,6 @@ function maskData(data, user) {
     doc.address = "****";
     doc.guardianName = "****";
 
-    // --- NURSE Specific Masking (Option 3) ---
-    // User requested "Nurse sees basic identity (Name, Ward) but sensitive medical redacted"
-    if (role === "Nurse") {
-      doc.disease = "****";
-    }
-
     return doc;
   });
 
