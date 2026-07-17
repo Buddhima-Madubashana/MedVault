@@ -115,11 +115,15 @@ const PatientRecords = () => {
         // Direct Add: Pass 'actionBy'
         const res = await fetch("http://localhost:5000/api/patients", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...patientData, actionBy: user._id }), // <--- UPDATED
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ ...patientData, actionBy: user._id }),
         });
         if (res.ok)
           showNotification("success", "Added", "Patient added successfully.");
+
       } else {
         // ... Nurse logic remains same (User ID is already passed as nurseId) ...
         if (!newPatient.doctorId) {

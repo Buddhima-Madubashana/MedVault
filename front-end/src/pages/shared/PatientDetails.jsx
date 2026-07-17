@@ -449,23 +449,31 @@ const PatientDetails = () => {
                 </div>
               </div>
             ) : (
-              <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+              <div className="space-y-3">
                 {patient.medicalHistory && patient.medicalHistory.trim() ? (
-                  patient.medicalHistory
+                  <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400 whitespace-pre-wrap">
+                    {patient.medicalHistory}
+                  </div>
                 ) : (
-                  <span className="italic">
+                  <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400 italic">
                     Patient admitted with symptoms of {patient.disease}. Initial assessment shows stable vitals.
                     Requires monitoring and standard treatment protocol.
-                    {"\n\n"}
-                    <strong className="not-italic text-slate-600 dark:text-slate-300">Admitted By:</strong>{" "}
-                    {patient.approvedBy?.name ? `Dr. ${patient.approvedBy.name}` : "System Admin"}
-                    {"\n"}
-                    <strong className="not-italic text-slate-600 dark:text-slate-300">Admission Date:</strong>{" "}
-                    {new Date(patient.createdAt).toLocaleDateString()}
-                  </span>
+                  </div>
                 )}
+                {/* Always show admission metadata — never wiped by history edits */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 space-y-1">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    <strong className="text-slate-600 dark:text-slate-300">Admitted By:</strong>{" "}
+                    {patient.approvedBy?.name ? `Dr. ${patient.approvedBy.name}` : "System Admin"}
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    <strong className="text-slate-600 dark:text-slate-300">Admission Date:</strong>{" "}
+                    {new Date(patient.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
             )}
+
           </div>
 
           {/* ── Treatment Timeline ── */}

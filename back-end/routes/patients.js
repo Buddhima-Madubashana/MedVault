@@ -31,11 +31,16 @@ router.get("/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// ADD Patient (Direct)
-router.post("/", async (req, res) => {
+// ADD Patient (Direct) — requires auth so we can mask the response
+router.post("/", authMiddleware, async (req, res) => {
   try {
     const { actionBy, ...patientData } = req.body; // Extract user ID
-    const newPatient = new Patient(patientData);
+
+    // Task 1: Set approvedBy so the PatientDetails page shows the correct doctor name
+    const newPatient = new Patient({
+      ...patientData,
+      approvedBy: actionBy || null,
+    });
     await newPatient.save();
 
     // Log Action
@@ -50,7 +55,10 @@ router.post("/", async (req, res) => {
         );
     }
 
-    res.status(201).json(newPatient);
+    // Task 2: Populate approvedBy and apply role-based masking before returning
+    const populated = await Patient.findById(newPatient._id).populate("approvedBy", "name");
+    const masked = maskData([populated], req.user);
+    res.status(201).json(masked[0]);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -132,7 +140,11 @@ router.patch("/:id", authMiddleware, async (req, res) => {
       req,
     );
 
-    res.json(patient);
+    // Task 4: Re-populate approvedBy so the frontend keeps the doctor name intact
+    // Task 2: Apply role-based masking to the PATCH response
+    const populated = await Patient.findById(patient._id).populate("approvedBy", "name");
+    const masked = maskData([populated], req.user);
+    res.json(masked[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

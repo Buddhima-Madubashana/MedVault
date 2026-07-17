@@ -472,7 +472,7 @@ const DashboardHome = () => {
                 {user.role}
               </span>
               <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
-                {user.specialty || user.ward || "System Administrator"}
+                {user.specialty || user.ward || null}
               </p>
             </div>
             {/* Show Patient Stats for Non-Admins */}

@@ -1,5 +1,56 @@
 import React, { useState, useRef } from "react";
-import { UserPlus, Mail, Lock, Shield, Upload, Camera, X } from "lucide-react";
+import { UserPlus, Mail, Lock, Shield, Upload, Camera, X, Stethoscope, Building2 } from "lucide-react";
+
+const DOCTOR_SPECIALTIES = [
+  "Cardiology",
+  "Dermatology",
+  "Emergency Medicine",
+  "Endocrinology",
+  "Gastroenterology",
+  "General Surgery",
+  "Geriatrics",
+  "Hematology",
+  "Infectious Disease",
+  "Internal Medicine",
+  "Nephrology",
+  "Neurology",
+  "Neurosurgery",
+  "Obstetrics & Gynecology",
+  "Oncology",
+  "Ophthalmology",
+  "Orthopedics",
+  "Otolaryngology (ENT)",
+  "Pathology",
+  "Pediatrics",
+  "Physical Medicine & Rehabilitation",
+  "Plastic Surgery",
+  "Psychiatry",
+  "Pulmonology",
+  "Radiology",
+  "Rheumatology",
+  "Urology",
+  "Vascular Surgery",
+];
+
+const NURSE_WARDS = [
+  "Cardiology Ward",
+  "Emergency Department",
+  "General Medicine Ward",
+  "Geriatrics Ward",
+  "ICU — Wing A",
+  "ICU — Wing B",
+  "Maternity Ward",
+  "Neonatal ICU (NICU)",
+  "Neurology Ward",
+  "Oncology Ward",
+  "Operating Theatre",
+  "Orthopedics Ward",
+  "Outpatient Department",
+  "Pediatrics Ward",
+  "Psychiatric Ward",
+  "Recovery Room",
+  "Surgical Ward",
+];
 import Notification from "../../components/Notification";
 import { AnimatePresence } from "framer-motion";
 
@@ -94,6 +145,8 @@ const UserManagement = () => {
     "w-full px-4 py-3 text-sm transition-all border outline-none rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-primary-500 dark:text-white placeholder-slate-400 dark:placeholder-slate-500";
   const inputWithIconClass =
     "w-full py-3 pr-4 pl-11 text-sm transition-all border outline-none rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-primary-500 dark:text-white placeholder-slate-400 dark:placeholder-slate-500";
+  const selectWithIconClass =
+    "w-full py-3 pr-4 pl-11 text-sm transition-all border outline-none rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-primary-500 dark:text-white appearance-none cursor-pointer";
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -262,14 +315,27 @@ const UserManagement = () => {
               <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                 Specialty
               </label>
-              <input
-                type="text"
-                name="specialty"
-                placeholder="e.g. Cardiology"
-                value={formData.specialty}
-                onChange={handleChange}
-                className={inputClass}
-              />
+              <div className="relative">
+                <Stethoscope
+                  className="absolute -translate-y-1/2 left-4 top-1/2 text-slate-400 dark:text-slate-500"
+                  size={18}
+                />
+                <select
+                  name="specialty"
+                  value={formData.specialty}
+                  onChange={handleChange}
+                  className={selectWithIconClass}
+                >
+                  <option value="" disabled>
+                    Select a specialty…
+                  </option>
+                  {DOCTOR_SPECIALTIES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
@@ -278,14 +344,27 @@ const UserManagement = () => {
               <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                 Assigned Ward
               </label>
-              <input
-                type="text"
-                name="ward"
-                placeholder="e.g. ICU - Wing A"
-                value={formData.ward}
-                onChange={handleChange}
-                className={inputClass}
-              />
+              <div className="relative">
+                <Building2
+                  className="absolute -translate-y-1/2 left-4 top-1/2 text-slate-400 dark:text-slate-500"
+                  size={18}
+                />
+                <select
+                  name="ward"
+                  value={formData.ward}
+                  onChange={handleChange}
+                  className={selectWithIconClass}
+                >
+                  <option value="" disabled>
+                    Select a ward…
+                  </option>
+                  {NURSE_WARDS.map((w) => (
+                    <option key={w} value={w}>
+                      {w}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
