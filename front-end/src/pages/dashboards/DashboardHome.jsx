@@ -17,6 +17,7 @@ import {
   PlusCircle,
   CheckSquare,
   Check,
+  Megaphone,
 } from "lucide-react";
 
 // Greeting Logic
@@ -45,6 +46,7 @@ const DashboardHome = () => {
   const isTempAdmin = !!(user?.isTempAdmin && user?.tempAdminExpiresAt && new Date(user.tempAdminExpiresAt) > new Date());
 
   const [activities, setActivities] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
   
   // Admin Request State
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
@@ -135,6 +137,21 @@ const DashboardHome = () => {
     }
   };
 
+  const fetchAnnouncements = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("http://localhost:5000/api/announcements", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAnnouncements(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch announcements:", err);
+    }
+  };
+
   const handleAssignTask = async (e) => {
     e.preventDefault();
     if (!selectedNurse || !taskDesc.trim()) {
@@ -192,6 +209,7 @@ const DashboardHome = () => {
   useEffect(() => {
     refreshUser();
     fetchPatientCount();
+    fetchAnnouncements();
     if (role === "Doctor" || role === "Nurse" || isTempAdmin) {
       fetchTasks();
     }
@@ -199,6 +217,7 @@ const DashboardHome = () => {
     const interval = setInterval(() => {
       refreshUser();
       fetchPatientCount();
+      fetchAnnouncements();
       if (role === "Doctor" || role === "Nurse" || isTempAdmin) {
         fetchTasks();
       }
@@ -448,12 +467,11 @@ const DashboardHome = () => {
             
             {/* Modal */}
             {isRequestModalOpen && (
-               <AdminRequestModal 
-                 isOpen={isRequestModalOpen} 
-                 onClose={() => setIsRequestModalOpen(false)}
-                 admins={admins}
-                 onSubmit={handleRequestSubmit}
-               />
+              <AdminRequestModal
+                onClose={() => setIsRequestModalOpen(false)}
+                onSubmit={handleRequestSubmit}
+                admins={admins}
+              />
             )}
           </div>
         </div>
@@ -461,6 +479,31 @@ const DashboardHome = () => {
         <div className="absolute top-0 right-0 w-64 h-64 -mt-10 -mr-10 rounded-full bg-white/5 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-40 h-40 -mb-10 -ml-10 rounded-full bg-white/10 blur-2xl"></div>
       </div>
+
+      {/* Announcements Banner */}
+      {announcements.length > 0 && (
+        <div className="space-y-4">
+          {announcements.map((ann) => (
+            <div 
+              key={ann._id} 
+              className={`p-4 rounded-2xl flex items-start gap-4 border shadow-sm ${
+                ann.priority === 'high' ? 'bg-red-50 border-red-200 text-red-900 dark:bg-red-900/20 dark:border-red-800/50 dark:text-red-100' :
+                ann.priority === 'normal' ? 'bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-900/20 dark:border-blue-800/50 dark:text-blue-100' :
+                'bg-green-50 border-green-200 text-green-900 dark:bg-green-900/20 dark:border-green-800/50 dark:text-green-100'
+              }`}
+            >
+              <Megaphone className="mt-1 flex-shrink-0" size={24} />
+              <div>
+                <h3 className="font-bold text-lg">{ann.title}</h3>
+                <p className="mt-1 opacity-90 whitespace-pre-wrap">{ann.message}</p>
+                <div className="mt-2 text-xs font-medium opacity-70">
+                  Posted by {ann.author?.firstName || 'Admin'} • {new Date(ann.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* 2. Main Content Grid */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">

@@ -8,10 +8,12 @@ import {
   Activity,
   Users,
   Eye,
+  Download,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import Notification from "../../components/Notification";
 import { useAuth } from "../../contexts/AuthContext";
+import { exportToCSV } from "../../utils/exportUtils";
 
 const AllUsers = () => {
   const { user, token } = useAuth(); // Admin user
@@ -168,6 +170,37 @@ const AllUsers = () => {
       (item.ward && item.ward.toLowerCase().includes(searchTerm.toLowerCase())),
   );
 
+  // --- EXPORT ---
+  const handleExport = () => {
+    let columns = [];
+    if (activeTab === "Doctors") {
+      columns = [
+        { header: "Name", key: "name" },
+        { header: "Email", key: "email" },
+        { header: "Specialty", key: "specialty" },
+        { header: "Shift Start", key: "shiftStart" },
+        { header: "Shift End", key: "shiftEnd" },
+      ];
+    } else if (activeTab === "Nurses") {
+      columns = [
+        { header: "Name", key: "name" },
+        { header: "Email", key: "email" },
+        { header: "Ward", key: "ward" },
+        { header: "Shift Start", key: "shiftStart" },
+        { header: "Shift End", key: "shiftEnd" },
+      ];
+    } else if (activeTab === "Patients") {
+      columns = [
+        { header: "Name", key: "name" },
+        { header: "DOB", key: "dob" },
+        { header: "Blood Type", key: "bloodType" },
+        { header: "Condition", key: "condition" },
+      ];
+    }
+    
+    exportToCSV(filteredData, `${activeTab}_Export`, columns);
+  };
+
   // --- HELPER FOR TABS ---
   const TabButton = ({ name, icon: Icon }) => (
     <button
@@ -215,6 +248,12 @@ const AllUsers = () => {
             className="w-full py-3 pl-10 pr-4 transition-all bg-white border shadow-sm outline-none rounded-xl border-slate-200 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500"
           />
         </div>
+        <button
+          onClick={handleExport}
+          className="flex items-center gap-2 px-6 py-3 font-bold text-white transition-all bg-green-600 shadow-lg rounded-xl shadow-green-500/30 hover:bg-green-700 w-full md:w-auto justify-center"
+        >
+          <Download size={18} /> Export CSV
+        </button>
       </div>
 
       {/* Grid Content */}

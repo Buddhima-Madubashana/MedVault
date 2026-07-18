@@ -28,6 +28,8 @@ import AuditLogs from "./pages/admin/AuditLogs";
 import AllUsers from "./pages/admin/AllUsers";
 import AdminRequests from "./pages/admin/AdminRequests";
 import SystemSettings from "./pages/admin/SystemSettings";
+import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
+import PermissionMatrix from "./pages/admin/PermissionMatrix";
 
 // New Approval Pages
 import PendingApprovals from "./pages/nurse/PendingApprovals";
@@ -83,6 +85,8 @@ function App() {
             <Route path="settings" element={<SystemSettings />} />
             <Route path="requests" element={<AdminRequests />} />
             <Route path="leaves" element={<AdminLeaves />} />
+            <Route path="announcements" element={<AdminAnnouncements />} />
+            <Route path="permissions" element={<PermissionMatrix />} />
             {/* --- DOCTOR ROUTES FOR TEMP ADMIN --- */}
             <Route path="reviews" element={<ReviewApprovals />} />
             <Route path="nurses" element={<NurseList />} />

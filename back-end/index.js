@@ -13,6 +13,7 @@ const adminRequestsRoutes = require("./routes/adminRequests");
 const notificationRoutes = require("./routes/notifications");
 const leaveRequestsRoutes = require("./routes/leaveRequests");
 const taskRoutes = require("./routes/tasks");
+const announcementRoutes = require("./routes/announcements");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -38,6 +39,7 @@ app.use("/api/admin-requests", adminRequestsRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/leave-requests", leaveRequestsRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/announcements", announcementRoutes);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

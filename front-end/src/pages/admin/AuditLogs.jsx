@@ -7,7 +7,9 @@ import {
   CheckCircle,
   User,
   Info,
+  Download,
 } from "lucide-react";
+import { exportToCSV } from "../../utils/exportUtils";
 
 const AuditLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -27,6 +29,18 @@ const AuditLogs = () => {
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.details.toLowerCase().includes(searchTerm.toLowerCase()),
   );
+
+  const handleExport = () => {
+    const columns = [
+      { header: "Timestamp", key: "timestamp" },
+      { header: "User", key: "userName" },
+      { header: "Role", key: "userRole" },
+      { header: "Action", key: "action" },
+      { header: "Details", key: "details" },
+      { header: "IP Address", key: "ipAddress" },
+    ];
+    exportToCSV(filteredLogs, "Audit_Logs_Export", columns);
+  };
 
   // --- STYLE HELPER ---
   const getActionStyle = (action) => {
@@ -122,6 +136,12 @@ const AuditLogs = () => {
               className="w-64 py-2 pr-4 text-sm transition-all bg-white border shadow-sm outline-none pl-9 rounded-xl border-slate-200 dark:bg-slate-800 focus:ring-2 focus:ring-blue-500"
             />
           </div>
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white transition-colors bg-green-600 border border-green-700 shadow-sm rounded-xl hover:bg-green-700"
+          >
+            <Download size={16} /> Export CSV
+          </button>
           <button className="p-2 transition-colors bg-white border shadow-sm border-slate-200 rounded-xl hover:bg-slate-50 text-slate-500">
             <Filter size={18} />
           </button>

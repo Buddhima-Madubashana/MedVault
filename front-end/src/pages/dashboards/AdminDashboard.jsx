@@ -11,7 +11,9 @@ const adminSidebarItems = [
   { name: "Audit Logs", path: "/admin/logs" },
   { name: "Admin Requests", path: "/admin/requests" },
   { name: "Leave Requests", path: "/admin/leaves" },
+  { name: "Announcements", path: "/admin/announcements" },
   { name: "System Settings", path: "/admin/settings" },
+  { name: "Permission Matrix", path: "/admin/permissions" },
 ];
 
 // Doctor-specific items surfaced for temp admins
