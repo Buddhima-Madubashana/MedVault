@@ -39,6 +39,32 @@ router.post("/login", async (req, res) => {
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Check Leave Status
+    const leaveStatus = await checkUserLeaveStatus(user._id);
+    if (leaveStatus.onLeave && !leaveStatus.overrideActive) {
+      if (!user.isLocked) {
+        user.isLocked = true;
+        await user.save();
+      }
+      await logAction(
+        user,
+        "LOGIN_BLOCKED",
+        "Attempted login while on approved leave without active emergency override",
+        req
+      );
+      return res.status(403).json({
+        message: "Access Denied: You are currently on leave. Contact administrator for emergency access override.",
+        onLeave: true,
+      });
+    } else {
+      // Not on leave (or has override)
+      // Auto-unlock if locked solely due to leave (failedLoginAttempts < maxLoginAttempts)
+      if (user.isLocked && user.failedLoginAttempts < settings.maxLoginAttempts) {
+        user.isLocked = false;
+        await user.save();
+      }
+    }
+
     // Check Locked Status
     if (user.isLocked && (user.role === "Doctor" || user.role === "Nurse")) {
       await logAction(
@@ -100,21 +126,6 @@ router.post("/login", async (req, res) => {
           });
       }
       return res.status(400).json({ message: "Invalid credentials" });
-    }
-
-    // Check Leave Status
-    const leaveStatus = await checkUserLeaveStatus(user._id);
-    if (leaveStatus.onLeave && !leaveStatus.overrideActive) {
-      await logAction(
-        user,
-        "LOGIN_BLOCKED",
-        "Attempted login while on approved leave without active emergency override",
-        req
-      );
-      return res.status(403).json({
-        message: "Access Denied: You are currently on leave. Contact administrator for emergency access override.",
-        onLeave: true,
-      });
     }
 
     // Reset Lockout Counters

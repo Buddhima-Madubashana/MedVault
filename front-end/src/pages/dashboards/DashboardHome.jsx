@@ -9,7 +9,6 @@ import {
   Activity,
   Users,
   Shield,
-  CheckCircle,
   UserPlus,
   AlertTriangle,
   Lock,
@@ -18,6 +17,7 @@ import {
   CheckSquare,
   Check,
   Megaphone,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 
 // Greeting Logic
@@ -48,6 +48,12 @@ const DashboardHome = () => {
   const [activities, setActivities] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   
+  // Announcement creation state (Admin only)
+  const [annTitle, setAnnTitle] = useState("");
+  const [annMessage, setAnnMessage] = useState("");
+  const [annPriority, setAnnPriority] = useState("normal");
+  const [annSubmitting, setAnnSubmitting] = useState(false);
+  
   // Admin Request State
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [admins, setAdmins] = useState([]);
@@ -64,6 +70,7 @@ const DashboardHome = () => {
   const [selectedNurse, setSelectedNurse] = useState("");
   const [selectedPatient, setSelectedPatient] = useState("");
   const [taskDesc, setTaskDesc] = useState("");
+  const [leaveRequests, setLeaveRequests] = useState([]);
 
   // 0. Fetch Fresh User Data (for Permission Status)
   const refreshUser = async () => {
@@ -140,7 +147,11 @@ const DashboardHome = () => {
   const fetchAnnouncements = async () => {
     if (!token) return;
     try {
-      const res = await fetch("http://localhost:5000/api/announcements", {
+      // Admins see all announcements (including drafts); others see only active ones
+      const url = (role === "Admin" && !isTempAdmin)
+        ? "http://localhost:5000/api/announcements/all"
+        : "http://localhost:5000/api/announcements";
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -149,6 +160,21 @@ const DashboardHome = () => {
       }
     } catch (err) {
       console.error("Failed to fetch announcements:", err);
+    }
+  };
+
+  const fetchLeaves = async () => {
+    if (!token || role === "Admin") return;
+    try {
+      const res = await fetch("http://localhost:5000/api/leave-requests", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLeaveRequests(data.filter(req => req.status === "Approved"));
+      }
+    } catch (err) {
+      console.error("Failed to fetch leaves:", err);
     }
   };
 
@@ -212,6 +238,7 @@ const DashboardHome = () => {
     fetchAnnouncements();
     if (role === "Doctor" || role === "Nurse" || isTempAdmin) {
       fetchTasks();
+      fetchLeaves();
     }
     // Poll every 5 seconds to immediately catch admin changes
     const interval = setInterval(() => {
@@ -220,6 +247,7 @@ const DashboardHome = () => {
       fetchAnnouncements();
       if (role === "Doctor" || role === "Nurse" || isTempAdmin) {
         fetchTasks();
+        fetchLeaves();
       }
     }, 5000);
     return () => clearInterval(interval);
@@ -279,27 +307,26 @@ const DashboardHome = () => {
     return `${days}d ago`;
   };
 
+  // 1. Fetch Available Staff (Doctors + Nurses) for all roles
   useEffect(() => {
-    if (role === "Doctor" || role === "Nurse" || isTempAdmin) {
-      fetch(`http://localhost:5000/api/users/doctors`)
-        .then((res) => res.json())
-        .then((data) => {
-          // Exclude the currently logged-in user from the Doctors On Call list
-          const others = data.filter((d) => d._id !== user?._id);
-          setDoctorList(others.slice(0, 4));
-          setAllDoctors(others);
-        })
-        .catch((err) => console.error(err));
-      fetch(`http://localhost:5000/api/users/nurses`)
-        .then((res) => res.json())
-        .then((data) => {
-          // Exclude the currently logged-in user from the Nurses On Call list
-          const others = data.filter((n) => n._id !== user?._id);
-          setNurseList(others.slice(0, 4));
-        })
-        .catch((err) => console.error(err));
-    }
-  }, [role]);
+    fetch(`http://localhost:5000/api/users/doctors/available`)
+      .then((res) => res.json())
+      .then((data) => {
+        // Exclude the currently logged-in user from the Doctors On Call list
+        const others = data.filter((d) => d._id !== user?._id && isUserInShift(d));
+        setDoctorList(others.slice(0, 4));
+        setAllDoctors(others);
+      })
+      .catch((err) => console.error(err));
+    fetch(`http://localhost:5000/api/users/nurses/available`)
+      .then((res) => res.json())
+      .then((data) => {
+        // Exclude the currently logged-in user from the Nurses On Call list
+        const others = data.filter((n) => n._id !== user?._id && isUserInShift(n));
+        setNurseList(others.slice(0, 4));
+      })
+      .catch((err) => console.error(err));
+  }, [role, user]);
 
   // 1.5 Fetch Admins (Only for Doctor Request)
   useEffect(() => {
@@ -401,6 +428,63 @@ const DashboardHome = () => {
     };
   };
 
+  const renderCalendar = () => (
+    <WidgetCard className="h-full">
+      <h3 className="mb-4 text-sm font-bold tracking-wider uppercase text-slate-400 flex items-center gap-2">
+        <CalendarIcon size={16} className="text-primary-500" /> Calendar
+      </h3>
+      <div className="space-y-3">
+        <div className="grid grid-cols-7 gap-1 bg-slate-50 dark:bg-slate-950/30 p-2 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+          {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, i) => (
+            <div key={i} className="text-center py-1 text-xs font-bold text-slate-400">{d}</div>
+          ))}
+          {Array.from({ length: 42 }).map((_, i) => {
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
+            const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            
+            const dayNumber = i - firstDay + 1;
+            const isCurrentMonth = dayNumber > 0 && dayNumber <= daysInMonth;
+            
+            if (!isCurrentMonth) return <div key={i} className="p-2"></div>;
+            
+            const dateObj = new Date(today.getFullYear(), today.getMonth(), dayNumber);
+            const isToday = dateObj.toDateString() === today.toDateString();
+            
+            // Check if it's an approved leave day
+            const isLeaveDay = leaveRequests.some(req => {
+               const start = new Date(req.startDate);
+               const end = new Date(req.endDate);
+               start.setHours(0,0,0,0);
+               end.setHours(23,59,59,999);
+               return dateObj >= start && dateObj <= end;
+            });
+
+            return (
+              <div
+                key={i}
+                className={`text-center py-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center ${
+                  isToday && isLeaveDay ? "bg-red-500 text-white shadow-md animate-pulse" :
+                  isToday ? "bg-primary-600 text-white shadow-md" :
+                  isLeaveDay ? "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400" :
+                  "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                }`}
+              >
+                {dayNumber}
+                {isLeaveDay && <span className="w-1 h-1 rounded-full bg-current mt-0.5 block"></span>}
+              </div>
+            );
+          })}
+        </div>
+        
+        <div className="text-[11px] text-slate-400 dark:text-slate-500 space-y-1 font-medium mt-3 px-1">
+          <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-primary-600"></span> Today</div>
+          <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-400"></span> Approved Leave</div>
+        </div>
+      </div>
+    </WidgetCard>
+  );
+
   if (!user)
     return (
       <div className="p-10 text-center text-slate-500">
@@ -468,6 +552,7 @@ const DashboardHome = () => {
             {/* Modal */}
             {isRequestModalOpen && (
               <AdminRequestModal
+                isOpen={true}
                 onClose={() => setIsRequestModalOpen(false)}
                 onSubmit={handleRequestSubmit}
                 admins={admins}
@@ -506,9 +591,12 @@ const DashboardHome = () => {
       )}
 
       {/* 2. Main Content Grid */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Left Column: Profile & Stats */}
-        <div className="space-y-8 lg:col-span-1">
+      <div className="flex flex-col gap-8">
+        
+        {/* Row 1: Profile & Stats + Activity/Tasks */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {/* Left Column */}
+          <div className="flex flex-col gap-8 lg:col-span-1">
           {/* Profile Card */}
           <WidgetCard className="relative overflow-hidden text-center group">
             <div className="absolute top-0 left-0 w-full h-24 bg-blue-50/50 dark:bg-slate-700/50"></div>
@@ -560,41 +648,6 @@ const DashboardHome = () => {
               </div>
             )}
           </WidgetCard>
-
-          {/* Quick Stats (ADMIN ONLY + TEMP ADMIN) */}
-          {(role === "Admin") && (
-            <WidgetCard>
-              <h3 className="mb-4 text-sm font-bold tracking-wider uppercase text-slate-400">
-                System Status
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 border bg-slate-50 dark:bg-slate-900/50 rounded-xl border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 text-green-600 bg-green-100 rounded-lg">
-                      <Shield size={18} />
-                    </div>
-                    <span className="font-medium text-slate-700 dark:text-slate-300">
-                      Security Level
-                    </span>
-                  </div>
-                  <span className="flex items-center gap-1 font-bold text-green-600">
-                    <CheckCircle size={14} /> High
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-3 border bg-slate-50 dark:bg-slate-900/50 rounded-xl border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 text-primary-600 bg-primary-100 dark:bg-primary-900/30 dark:text-primary-400 rounded-lg">
-                      <Activity size={18} />
-                    </div>
-                    <span className="font-medium text-slate-700 dark:text-slate-300">
-                      System Load
-                    </span>
-                  </div>
-                  <span className="font-bold text-primary-600 dark:text-primary-400">Normal</span>
-                </div>
-              </div>
-            </WidgetCard>
-          )}
 
           {/* Ward & Patient Statistics (All Roles) */}
           <WidgetCard>
@@ -654,61 +707,14 @@ const DashboardHome = () => {
             )}
           </WidgetCard>
 
-          {/* Shift Calendar & Rotations (Non-Admins or Temp Admins) */}
-          {(role !== "Admin" || isTempAdmin) && (
-            <WidgetCard>
-              <h3 className="mb-4 text-sm font-bold tracking-wider uppercase text-slate-400 flex items-center gap-2">
-                <Clock size={16} className="text-primary-500" /> Shift Schedule
-              </h3>
-              <div className="space-y-3">
-                <div className="p-3 bg-slate-50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800/80 rounded-2xl flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Today's Shift Status</p>
-                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                      {isUserInShift(currentUser) ? "On Duty (Active Access)" : "Off Duty (Outside Shift)"}
-                    </p>
-                  </div>
-                  <span className={`w-3.5 h-3.5 rounded-full ${isUserInShift(currentUser) ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`}></span>
-                </div>
-                
-                <div className="grid grid-cols-7 gap-1 bg-slate-50 dark:bg-slate-950/30 p-2 rounded-2xl border border-slate-100 dark:border-slate-800/80">
-                  {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => {
-                    const isToday = new Date().getDay() === (i === 6 ? 0 : i + 1);
-                    const isWeekend = i >= 5;
-                    return (
-                      <div
-                        key={i}
-                        className={`text-center py-2 rounded-xl text-xs font-bold ${
-                          isToday
-                            ? "bg-primary-600 text-white shadow-md"
-                            : "text-slate-500 dark:text-slate-400"
-                        }`}
-                      >
-                        <div>{d}</div>
-                        <div className="text-[9px] opacity-75 mt-0.5">
-                          {currentUser?.shiftStart && !isWeekend ? "Shift" : "Off"}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                
-                <div className="text-[11px] text-slate-400 dark:text-slate-500 space-y-1 font-medium font-medium">
-                  <p>• Shift Hours: Mon - Fri ({currentUser?.shiftStart || "N/A"} to {currentUser?.shiftEnd || "N/A"})</p>
-                  <p>• Access restrictions automatically apply outside shift windows.</p>
-                </div>
-              </div>
-            </WidgetCard>
-          )}
+          </div>
 
-        </div>
-
-        {/* Right Column: Activity & Staff */}
-        <div className="space-y-8 lg:col-span-2">
+          {/* Right Column */}
+          <div className="flex flex-col gap-8 lg:col-span-2">
           {/* Live Activity Feed (ADMIN + TEMP ADMIN) */}
           {(role === "Admin" || isTempAdmin) && (
-            <WidgetCard>
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+            <WidgetCard className="flex flex-col h-full">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700 shrink-0">
                 <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
                   <Clock size={20} className="text-primary-500" /> Live Activity
                   Feed
@@ -721,7 +727,7 @@ const DashboardHome = () => {
                 </button>
               </div>
 
-              <div className="px-2 space-y-6">
+              <div className="px-2 space-y-6 flex-1 overflow-y-auto">
                 {activities.length > 0 ? (
                   activities.map((log, i) => {
                     const style = getLogStyle(log.action);
@@ -769,6 +775,7 @@ const DashboardHome = () => {
               </div>
             </WidgetCard>
           )}
+
 
           {/* Active Staff Lists & Doctor Widgets (NON-ADMIN and TEMP ADMIN) */}
           {(role !== "Admin" || isTempAdmin) && (
@@ -949,111 +956,269 @@ const DashboardHome = () => {
                   </div>
                 </WidgetCard>
               )}
-
-              {/* Doctors On Call */}
-              <WidgetCard>
-                <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
-                  <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                    <Users size={20} className="text-primary-500" />
-                    Doctors On Call
-                  </h3>
-                  <span className="px-2.5 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-bold flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>{" "}
-                    Live
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {doctorList.length > 0 ? (
-                    doctorList.map((staff, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 border-slate-100 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-800 group"
-                      >
-                        <div className="relative">
-                          <img
-                            src={
-                              staff.imageUrl ||
-                              `https://ui-avatars.com/api/?name=${staff.name}`
-                            }
-                            className="object-cover w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-800"
-                            alt="Staff"
-                          />
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full dark:border-slate-800"></div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 truncate">
-                            {staff.name}
-                          </p>
-                          <p className="text-xs font-medium text-slate-500">
-                            {staff.specialty || "General"}
-                          </p>
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                          {timeAgo(staff.lastLoginAt)}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
-                      <Users size={32} className="mb-2 text-slate-300" />
-                      <p>No doctors found.</p>
-                    </div>
-                  )}
-                </div>
-              </WidgetCard>
-
-              {/* Nurses On Duty */}
-              <WidgetCard>
-                <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
-                  <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                    <Activity size={20} className="text-pink-500" />
-                    Nurses On Duty
-                  </h3>
-                  <span className="px-2.5 py-1 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 rounded-full text-xs font-bold flex items-center gap-1">
-                    <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>{" "}
-                    Live
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {nurseList.length > 0 ? (
-                    nurseList.map((staff, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-pink-50 dark:hover:bg-pink-900/20 border-slate-100 dark:border-slate-700 hover:border-pink-200 dark:hover:border-pink-800 group"
-                      >
-                        <div className="relative">
-                          <img
-                            src={
-                              staff.imageUrl ||
-                              `https://ui-avatars.com/api/?name=${staff.name}`
-                            }
-                            className="object-cover w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-800"
-                            alt="Staff"
-                          />
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-pink-500 border-2 border-white rounded-full dark:border-slate-800"></div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 truncate">
-                            {staff.name}
-                          </p>
-                          <p className="text-xs font-medium text-slate-500">
-                            {staff.ward || "General"}
-                          </p>
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                          {timeAgo(staff.lastLoginAt)}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
-                      <Activity size={32} className="mb-2 text-slate-300" />
-                      <p>No nurses found.</p>
-                    </div>
-                  )}
-                </div>
-              </WidgetCard>
             </>
+          )}
+          </div>
+        </div>
+
+        {/* Row 2: Doctors On Call & Nurses On Call */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          {/* ─── Doctors On Call (ALL ROLES) ─── */}
+          <WidgetCard className="h-full">
+            <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                <Users size={20} className="text-primary-500" />
+                Doctors On Call
+              </h3>
+              <span className="px-2.5 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-bold flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>{" "}
+                Available
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {doctorList.length > 0 ? (
+                doctorList.map((staff, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 border-slate-100 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-800 group"
+                  >
+                    <div className="relative">
+                      <img
+                        src={
+                          staff.imageUrl ||
+                          `https://ui-avatars.com/api/?name=${staff.name}`
+                        }
+                        className="object-cover w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-800"
+                        alt="Staff"
+                      />
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full dark:border-slate-800"></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 truncate">
+                        {staff.name}
+                      </p>
+                      <p className="text-xs font-medium text-slate-500">
+                        {staff.specialty || "General"}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                      {timeAgo(staff.lastLoginAt)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
+                  <Users size={32} className="mb-2 text-slate-300" />
+                  <p>No available doctors.</p>
+                </div>
+              )}
+            </div>
+          </WidgetCard>
+
+          {/* ─── Nurses On Call (ALL ROLES) ─── */}
+          <WidgetCard className="h-full">
+            <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                <Activity size={20} className="text-pink-500" />
+                Nurses On Call
+              </h3>
+              <span className="px-2.5 py-1 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 rounded-full text-xs font-bold flex items-center gap-1">
+                <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>{" "}
+                Available
+              </span>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {nurseList.length > 0 ? (
+                nurseList.map((staff, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-pink-50 dark:hover:bg-pink-900/20 border-slate-100 dark:border-slate-700 hover:border-pink-200 dark:hover:border-pink-800 group"
+                  >
+                    <div className="relative">
+                      <img
+                        src={
+                          staff.imageUrl ||
+                          `https://ui-avatars.com/api/?name=${staff.name}`
+                        }
+                        className="object-cover w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-800"
+                        alt="Staff"
+                      />
+                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-pink-500 border-2 border-white rounded-full dark:border-slate-800"></div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 truncate">
+                        {staff.name}
+                      </p>
+                      <p className="text-xs font-medium text-slate-500">
+                        {staff.ward || "General"}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                      {timeAgo(staff.lastLoginAt)}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
+                  <Activity size={32} className="mb-2 text-slate-300" />
+                  <p>No available nurses.</p>
+                </div>
+              )}
+            </div>
+          </WidgetCard>
+
+        </div>
+
+        {/* Row 3: Calendar & Announcements */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            {renderCalendar()}
+          </div>
+          
+          {/* ─── Announcements Management (ADMIN ONLY) ─── */}
+          {(role === "Admin" && !isTempAdmin) && (
+            <div className="lg:col-span-2">
+              <WidgetCard className="h-full">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+                <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                  <Megaphone size={20} className="text-blue-500" /> Announcements
+                </h3>
+                <button
+                  onClick={() => navigate("/admin/announcements")}
+                  className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline"
+                >
+                  View All
+                </button>
+              </div>
+
+              {/* Create Form */}
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!annTitle.trim() || !annMessage.trim()) return;
+                  setAnnSubmitting(true);
+                  try {
+                    const res = await fetch("http://localhost:5000/api/announcements", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({
+                        title: annTitle.trim(),
+                        message: annMessage.trim(),
+                        priority: annPriority,
+                        isActive: true,
+                      }),
+                    });
+                    if (res.ok) {
+                      success("Announcement published!");
+                      setAnnTitle("");
+                      setAnnMessage("");
+                      setAnnPriority("normal");
+                      fetchAnnouncements();
+                    } else {
+                      const err = await res.json();
+                      error(err.message || "Failed to publish.");
+                    }
+                  } catch (err) {
+                    error("Server error. Please try again.");
+                  } finally {
+                    setAnnSubmitting(false);
+                  }
+                }}
+                className="space-y-3 mb-6"
+              >
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">Title</label>
+                  <input
+                    type="text"
+                    value={annTitle}
+                    onChange={(e) => setAnnTitle(e.target.value)}
+                    placeholder="e.g. System Maintenance Tonight"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-medium"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">Content</label>
+                  <textarea
+                    rows={3}
+                    value={annMessage}
+                    onChange={(e) => setAnnMessage(e.target.value)}
+                    placeholder="Enter announcement details..."
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-medium resize-none"
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">Priority</label>
+                    <select
+                      value={annPriority}
+                      onChange={(e) => setAnnPriority(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-medium"
+                    >
+                      <option value="low">Low</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={annSubmitting}
+                    className="self-end py-2.5 px-5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center gap-1.5"
+                  >
+                    <Megaphone size={15} /> {annSubmitting ? "Publishing…" : "Publish"}
+                  </button>
+                </div>
+              </form>
+
+              {/* Recent Announcements Preview */}
+              {announcements.length > 0 ? (
+                <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase">Recent Announcements</h4>
+                  {announcements.slice(0, 3).map((ann) => {
+                    const priorityStyle =
+                      ann.priority === "high"
+                        ? "border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800/40"
+                        : ann.priority === "low"
+                        ? "border-green-200 bg-green-50 dark:bg-green-900/10 dark:border-green-800/40"
+                        : "border-blue-200 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800/40";
+                    const badgeStyle =
+                      ann.priority === "high"
+                        ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                        : ann.priority === "low"
+                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
+                    return (
+                      <div key={ann._id} className={`p-3.5 rounded-xl border ${priorityStyle}`}>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight flex-1 truncate">
+                            {ann.title}
+                          </p>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide shrink-0 ${badgeStyle}`}>
+                            {ann.priority}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
+                          {ann.message.length > 120 ? `${ann.message.substring(0, 120)}…` : ann.message}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                          {new Date(ann.createdAt).toLocaleString()} · By {ann.author?.firstName || "Admin"}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-6 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
+                  <Megaphone size={28} className="mx-auto mb-2 text-slate-300" />
+                  <p className="text-sm text-slate-500">No announcements yet. Create the first one above.</p>
+                </div>
+              )}
+              </WidgetCard>
+            </div>
           )}
         </div>
       </div>

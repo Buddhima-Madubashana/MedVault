@@ -101,7 +101,7 @@ router.put("/:id/:action", authMiddleware, async (req, res) => {
       type: "Leave Request Update",
       title: `Leave Request ${request.status}`,
       message: `Your leave request from ${request.startDate.toDateString()} to ${request.endDate.toDateString()} was ${request.status.toLowerCase()}.`,
-      link: "/leaves",
+      link: null,
       icon: action === "approve" ? "check-circle" : "x-circle",
     });
 

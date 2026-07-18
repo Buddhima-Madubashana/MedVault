@@ -137,7 +137,7 @@ router.put("/:id/approve", authMiddleware, async (req, res) => {
       type: "Permission Granted",
       title: "Admin Access Approved",
       message: `Admin ${actor.name} granted you temporary admin access.`,
-      link: "/doctor/dashboard",
+      link: null,
       icon: "check"
     });
 
@@ -167,7 +167,7 @@ router.put("/:id/reject", authMiddleware, async (req, res) => {
       type: "Permission Denied",
       title: "Admin Access Rejected",
       message: `Admin ${actor.name} rejected your admin access request.`,
-      link: "/doctor/dashboard",
+      link: null,
       icon: "x"
     });
 
@@ -216,7 +216,7 @@ router.put("/:id/revoke", authMiddleware, async (req, res) => {
       type: "Permission Revoked",
       title: "Admin Access Revoked",
       message: `Admin ${admin.name} revoked your temporary admin access.`,
-      link: "/doctor/dashboard",
+      link: null,
       icon: "alert"
     });
 

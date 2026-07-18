@@ -1,7 +1,24 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
+const LeaveRequest = require("../models/LeaveRequest");
 const { logAction } = require("../utils/logger");
+
+// Helper: get IDs of staff currently on approved leave (covering today)
+const getStaffOnLeaveIds = async () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const activeLeaves = await LeaveRequest.find({
+    status: "Approved",
+    startDate: { $lte: tomorrow },
+    endDate: { $gte: today },
+  }).select("requester");
+
+  return activeLeaves.map((l) => l.requester.toString());
+};
 
 // Get All Users (with optional role filter)
 router.get("/", async (req, res) => {
@@ -18,7 +35,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Get Doctors
+// Get Doctors (all)
 router.get("/doctors", async (req, res) => {
   try {
     const doctors = await User.find({ role: "Doctor" }).select("-password");
@@ -28,10 +45,38 @@ router.get("/doctors", async (req, res) => {
   }
 });
 
-// Get Nurses
+// Get Doctors currently available (not on approved leave today)
+router.get("/doctors/available", async (req, res) => {
+  try {
+    const onLeaveIds = await getStaffOnLeaveIds();
+    const doctors = await User.find({
+      role: "Doctor",
+      _id: { $nin: onLeaveIds },
+    }).select("-password");
+    res.json(doctors);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get Nurses (all)
 router.get("/nurses", async (req, res) => {
   try {
     const nurses = await User.find({ role: "Nurse" }).select("-password");
+    res.json(nurses);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get Nurses currently available (not on approved leave today)
+router.get("/nurses/available", async (req, res) => {
+  try {
+    const onLeaveIds = await getStaffOnLeaveIds();
+    const nurses = await User.find({
+      role: "Nurse",
+      _id: { $nin: onLeaveIds },
+    }).select("-password");
     res.json(nurses);
   } catch (err) {
     res.status(500).json({ error: err.message });

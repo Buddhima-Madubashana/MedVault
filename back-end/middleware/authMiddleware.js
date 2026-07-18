@@ -24,6 +24,10 @@ module.exports = async function (req, res, next) {
     const { checkUserLeaveStatus } = require("../utils/leaveChecker");
     const leaveStatus = await checkUserLeaveStatus(user._id);
     if (leaveStatus.onLeave && !leaveStatus.overrideActive) {
+      if (!user.isLocked) {
+        user.isLocked = true;
+        await user.save();
+      }
       return res.status(403).json({
         message: "Access Denied: You are currently on leave.",
         onLeave: true,

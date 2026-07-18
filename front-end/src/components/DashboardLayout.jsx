@@ -125,7 +125,8 @@ const DashboardLayout = ({ children, sidebarItems, isTempAdmin = false }) => {
       });
       fetchNotifications();
       setShowNotifDropdown(false);
-      if (link) navigate(link);
+      // Only navigate if a valid destination link is provided
+      if (link && typeof link === "string" && link.trim()) navigate(link);
     } catch (err) {
       console.error("Failed to mark as read:", err);
     }
