@@ -41,6 +41,9 @@ const DashboardHome = () => {
   const navigate = useNavigate();
   const greeting = getGreeting();
 
+  // Determine if this is a temp admin (doctor with temporary admin access)
+  const isTempAdmin = !!(user?.isTempAdmin && user?.tempAdminExpiresAt && new Date(user.tempAdminExpiresAt) > new Date());
+
   const [activities, setActivities] = useState([]);
   
   // Admin Request State
@@ -189,14 +192,14 @@ const DashboardHome = () => {
   useEffect(() => {
     refreshUser();
     fetchPatientCount();
-    if (role === "Doctor" || role === "Nurse") {
+    if (role === "Doctor" || role === "Nurse" || isTempAdmin) {
       fetchTasks();
     }
     // Poll every 5 seconds to immediately catch admin changes
     const interval = setInterval(() => {
       refreshUser();
       fetchPatientCount();
-      if (role === "Doctor" || role === "Nurse") {
+      if (role === "Doctor" || role === "Nurse" || isTempAdmin) {
         fetchTasks();
       }
     }, 5000);
@@ -204,7 +207,7 @@ const DashboardHome = () => {
   }, [user, token, role]);
 
   useEffect(() => {
-    if (token && role === "Doctor") {
+    if (token && (role === "Doctor" || isTempAdmin)) {
       fetch("http://localhost:5000/api/users/nurses", {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -258,24 +261,30 @@ const DashboardHome = () => {
   };
 
   useEffect(() => {
-    if (role === "Doctor" || role === "Nurse") {
+    if (role === "Doctor" || role === "Nurse" || isTempAdmin) {
       fetch(`http://localhost:5000/api/users/doctors`)
         .then((res) => res.json())
         .then((data) => {
-          setDoctorList(data.slice(0, 4));
-          setAllDoctors(data);
+          // Exclude the currently logged-in user from the Doctors On Call list
+          const others = data.filter((d) => d._id !== user?._id);
+          setDoctorList(others.slice(0, 4));
+          setAllDoctors(others);
         })
         .catch((err) => console.error(err));
       fetch(`http://localhost:5000/api/users/nurses`)
         .then((res) => res.json())
-        .then((data) => setNurseList(data.slice(0, 4)))
+        .then((data) => {
+          // Exclude the currently logged-in user from the Nurses On Call list
+          const others = data.filter((n) => n._id !== user?._id);
+          setNurseList(others.slice(0, 4));
+        })
         .catch((err) => console.error(err));
     }
   }, [role]);
 
   // 1.5 Fetch Admins (Only for Doctor Request)
   useEffect(() => {
-    if (role === "Doctor") {
+    if (role === "Doctor" && !isTempAdmin) {
        fetch(`http://localhost:5000/api/users?role=Admin`) // Assuming endpoint supports filtering
         .then((res) => res.json())
         .then((data) => setAdmins(data))
@@ -302,9 +311,9 @@ const DashboardHome = () => {
     return Object.entries(stats).map(([name, count]) => ({ name, count }));
   };
 
-  // 2. Fetch Live Activity (Only for Admin, Limit 3)
+  // 2. Fetch Live Activity (Only for Admin and Temp Admin, Limit 3)
   useEffect(() => {
-    if (role === "Admin" || (currentUser && currentUser.isTempAdmin)) { // Temp Admin gets to see logs too?
+    if (role === "Admin" || isTempAdmin) {
       fetch("http://localhost:5000/api/audit-logs?limit=3", {
          headers: { Authorization: `Bearer ${token}` }, // Add auth for logs
       })
@@ -391,7 +400,7 @@ const DashboardHome = () => {
             </h1>
             <p className="max-w-xl text-lg text-primary-100 opacity-90">
               {role === "Admin"
-                ? (user.isTempAdmin && timeLeft > 0
+                ? (isTempAdmin && timeLeft > 0
                     ? `TEMPORARY ADMIN ACTIVE. Time Remaining: ${formatTimeKey(timeLeft)}` 
                     : "System status is stable. Review the latest security events below.")
                 : requestStatus === "Approved" 
@@ -400,7 +409,8 @@ const DashboardHome = () => {
             </p>
           </div>
           <div className="flex gap-3">
-             {role === "Doctor" && (
+             {/* Show Request Admin button only for pure doctors (not temp admins) */}
+             {role === "Doctor" && !isTempAdmin && (
                requestStatus === "Approved" ? (
                   <div className="flex items-center gap-2 px-5 py-2.5 bg-red-500/20 border border-red-200/50 rounded-xl">
                     <Shield className="animate-pulse text-red-100" />
@@ -426,6 +436,14 @@ const DashboardHome = () => {
                    <Lock size={18} /> Request Admin Permission
                  </button>
                )
+             )}
+
+             {/* Temp admin badge shown in the header */}
+             {isTempAdmin && (
+               <div className="flex items-center gap-2 px-5 py-2.5 bg-amber-500/20 border border-amber-200/50 rounded-xl">
+                 <Shield className="animate-pulse text-amber-200" size={20} />
+                 <span className="font-bold text-amber-50">Temp Admin Active · {formatTimeKey(timeLeft)}</span>
+               </div>
              )}
             
             {/* Modal */}
@@ -475,8 +493,8 @@ const DashboardHome = () => {
                 {user.specialty || user.ward || null}
               </p>
             </div>
-            {/* Show Patient Stats for Non-Admins */}
-            {role !== "Admin" && (
+            {/* Show Patient Stats for Non-Admins (and Temp Admins as doctors) */}
+            {(role !== "Admin" || isTempAdmin) && (
               <div className="grid grid-cols-2 pt-6 mt-6 border-t divide-x divide-slate-100 dark:divide-slate-700 border-slate-100 dark:border-slate-700">
                 <div>
                   <span className="block text-xl font-bold text-slate-800 dark:text-white truncate">
@@ -500,8 +518,8 @@ const DashboardHome = () => {
             )}
           </WidgetCard>
 
-          {/* Quick Stats (ADMIN ONLY) */}
-          {role === "Admin" && (
+          {/* Quick Stats (ADMIN ONLY + TEMP ADMIN) */}
+          {(role === "Admin") && (
             <WidgetCard>
               <h3 className="mb-4 text-sm font-bold tracking-wider uppercase text-slate-400">
                 System Status
@@ -593,8 +611,8 @@ const DashboardHome = () => {
             )}
           </WidgetCard>
 
-          {/* Shift Calendar & Rotations (Non-Admins Only) */}
-          {role !== "Admin" && (
+          {/* Shift Calendar & Rotations (Non-Admins or Temp Admins) */}
+          {(role !== "Admin" || isTempAdmin) && (
             <WidgetCard>
               <h3 className="mb-4 text-sm font-bold tracking-wider uppercase text-slate-400 flex items-center gap-2">
                 <Clock size={16} className="text-primary-500" /> Shift Schedule
@@ -644,8 +662,8 @@ const DashboardHome = () => {
 
         {/* Right Column: Activity & Staff */}
         <div className="space-y-8 lg:col-span-2">
-          {/* Live Activity Feed (ADMIN ONLY) */}
-          {role === "Admin" && (
+          {/* Live Activity Feed (ADMIN + TEMP ADMIN) */}
+          {(role === "Admin" || isTempAdmin) && (
             <WidgetCard>
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
                 <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
@@ -709,11 +727,11 @@ const DashboardHome = () => {
             </WidgetCard>
           )}
 
-          {/* Active Staff Lists (NON-ADMIN ONLY) */}
-          {role !== "Admin" && (
+          {/* Active Staff Lists & Doctor Widgets (NON-ADMIN and TEMP ADMIN) */}
+          {(role !== "Admin" || isTempAdmin) && (
             <>
               {/* Doctor Task Assignment & Tracker */}
-              {role === "Doctor" && (
+              {(role === "Doctor" || isTempAdmin) && (
                 <>
                   <WidgetCard>
                     <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">

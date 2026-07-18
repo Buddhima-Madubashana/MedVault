@@ -83,6 +83,11 @@ function App() {
             <Route path="settings" element={<SystemSettings />} />
             <Route path="requests" element={<AdminRequests />} />
             <Route path="leaves" element={<AdminLeaves />} />
+            {/* --- DOCTOR ROUTES FOR TEMP ADMIN --- */}
+            <Route path="reviews" element={<ReviewApprovals />} />
+            <Route path="nurses" element={<NurseList />} />
+            <Route path="doctors" element={<DoctorList />} />
+            <Route path="doctor-leaves" element={<LeaveManagement />} />
           </Route>
 
           {/* --- DOCTOR ROUTES --- */}

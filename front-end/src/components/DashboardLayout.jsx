@@ -25,7 +25,7 @@ import {
   EyeOff,
 } from "lucide-react";
 
-const DashboardLayout = ({ children, sidebarItems }) => {
+const DashboardLayout = ({ children, sidebarItems, isTempAdmin = false }) => {
   const { role, logout, user, token } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -182,7 +182,16 @@ const DashboardLayout = ({ children, sidebarItems }) => {
           <div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">MedVault</h1>
             <p className="text-xs font-semibold tracking-wide uppercase text-slate-400 dark:text-slate-500">
-              {role} Portal
+              {isTempAdmin ? (
+                <span className="flex items-center gap-1">
+                  <span className="text-primary-500">Doctor</span>
+                  <span className="text-slate-300 dark:text-slate-600">|</span>
+                  <span className="text-amber-500">Admin</span>
+                  <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800">TEMP</span>
+                </span>
+              ) : (
+                `${role} Portal`
+              )}
             </p>
           </div>
         </div>
@@ -190,6 +199,21 @@ const DashboardLayout = ({ children, sidebarItems }) => {
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {sidebarItems.map((item, index) => {
+            // Render divider items as section headers
+            if (item.divider) {
+              return (
+                <div key={index} className="pt-4 pb-2">
+                  <div className="flex items-center gap-2 px-2">
+                    <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                    <span className="text-[10px] font-bold tracking-widest uppercase text-amber-500 dark:text-amber-400 whitespace-nowrap">
+                      Doctor Access
+                    </span>
+                    <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                  </div>
+                </div>
+              );
+            }
+
             const isActive =
               location.pathname === item.path ||
               (item.path !== "/" && location.pathname.endsWith(item.path));
