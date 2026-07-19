@@ -52,10 +52,18 @@ router.post("/login", async (req, res) => {
         "Attempted login while on approved leave without active emergency override",
         req
       );
-      return res.status(403).json({
-        message: "Access Denied: You are currently on leave. Contact administrator for emergency access override.",
-        onLeave: true,
-      });
+
+      // Only Doctors can request emergency access override; Nurses are fully blocked
+      if (user.role === "Doctor") {
+        return res.status(403).json({
+          message: "Access Denied: You are currently on leave. Contact administrator for emergency access override.",
+          onLeave: true,
+        });
+      } else {
+        return res.status(403).json({
+          message: "Access Denied: You are currently on leave. You cannot log in until your leave period is over.",
+        });
+      }
     } else {
       // Not on leave (or has override)
       // Auto-unlock if locked solely due to leave (failedLoginAttempts < maxLoginAttempts)

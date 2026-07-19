@@ -274,7 +274,7 @@ const AdminLeaves = () => {
                   >
                     <XCircle size={16} /> Revoke Override
                   </button>
-                ) : (
+                ) : req.requester?.role !== "Nurse" ? (
                   <button
                     onClick={() => {
                       setSelectedRequest(req);
@@ -286,7 +286,7 @@ const AdminLeaves = () => {
                   >
                     <Key size={16} /> Grant Emergency Access
                   </button>
-                )}
+                ) : null}
               </div>
             ))}
           </div>

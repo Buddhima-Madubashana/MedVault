@@ -357,10 +357,10 @@ const DashboardHome = () => {
     return Object.entries(stats).map(([name, count]) => ({ name, count }));
   };
 
-  // 2. Fetch Live Activity (Only for Admin and Temp Admin, Limit 3)
+  // 2. Fetch Live Activity (Only for Admin and Temp Admin, Limit 4)
   useEffect(() => {
     if (role === "Admin" || isTempAdmin) {
-      fetch("http://localhost:5000/api/audit-logs?limit=3", {
+      fetch("http://localhost:5000/api/audit-logs?limit=4", {
          headers: { Authorization: `Bearer ${token}` }, // Add auth for logs
       })
         .then((res) => res.json())
@@ -565,8 +565,8 @@ const DashboardHome = () => {
         <div className="absolute bottom-0 left-0 w-40 h-40 -mb-10 -ml-10 rounded-full bg-white/10 blur-2xl"></div>
       </div>
 
-      {/* Announcements Banner */}
-      {announcements.length > 0 && (
+      {/* Announcements Banner (shown only for Doctors, Nurses, and TempAdmins — not for permanent Admins) */}
+      {(role !== "Admin" || isTempAdmin) && announcements.length > 0 && (
         <div className="space-y-4">
           {announcements.map((ann) => (
             <div 
@@ -598,7 +598,7 @@ const DashboardHome = () => {
           {/* Left Column */}
           <div className="flex flex-col gap-8 lg:col-span-1">
           {/* Profile Card */}
-          <WidgetCard className="relative overflow-hidden text-center group">
+          <WidgetCard className="relative text-center group">
             <div className="absolute top-0 left-0 w-full h-24 bg-blue-50/50 dark:bg-slate-700/50"></div>
             <div className="relative z-10 inline-block">
               <div className="p-1 mx-auto bg-white rounded-full shadow-md w-28 h-28 dark:bg-slate-900 ring-1 ring-primary-200 dark:ring-slate-700">
@@ -624,8 +624,8 @@ const DashboardHome = () => {
                 {user.specialty || user.ward || null}
               </p>
             </div>
-            {/* Show Patient Stats for Non-Admins (and Temp Admins as doctors) */}
-            {(role !== "Admin" || isTempAdmin) && (
+            {/* Show Patient Stats for Doctors, Nurses, and Temp Admins */}
+            {(user?.role !== "Admin" || role !== "Admin" || isTempAdmin) && (
               <div className="grid grid-cols-2 pt-6 mt-6 border-t divide-x divide-slate-100 dark:divide-slate-700 border-slate-100 dark:border-slate-700">
                 <div>
                   <span className="block text-xl font-bold text-slate-800 dark:text-white truncate">
@@ -706,6 +706,9 @@ const DashboardHome = () => {
               </div>
             )}
           </WidgetCard>
+
+          {/* Calendar for Doctor dashboard - placed under Ward & Patient Statistics */}
+          {(role === "Doctor" || isTempAdmin) && renderCalendar()}
 
           </div>
 
@@ -895,6 +898,110 @@ const DashboardHome = () => {
                 </>
               )}
 
+              {/* ─── Doctors On Call (ALL ROLES) ─── */}
+              <WidgetCard>
+                <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                    <Users size={20} className="text-primary-500" />
+                    Doctors On Call
+                  </h3>
+                  <span className="px-2.5 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-bold flex items-center gap-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>{" "}
+                    Available
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {doctorList.length > 0 ? (
+                    doctorList.map((staff, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 border-slate-100 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-800 group"
+                      >
+                        <div className="relative">
+                          <img
+                            src={
+                              staff.imageUrl ||
+                              `https://ui-avatars.com/api/?name=${staff.name}`
+                            }
+                            className="object-cover w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-800"
+                            alt="Staff"
+                          />
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full dark:border-slate-800"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 truncate">
+                            {staff.name}
+                          </p>
+                          <p className="text-xs font-medium text-slate-500">
+                            {staff.specialty || "General"}
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                          {timeAgo(staff.lastLoginAt)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
+                      <Users size={32} className="mb-2 text-slate-300" />
+                      <p>No available doctors.</p>
+                    </div>
+                  )}
+                </div>
+              </WidgetCard>
+
+              {/* ─── Nurses On Call (ALL ROLES) ─── */}
+              <WidgetCard>
+                <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
+                    <Activity size={20} className="text-pink-500" />
+                    Nurses On Call
+                  </h3>
+                  <span className="px-2.5 py-1 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 rounded-full text-xs font-bold flex items-center gap-1">
+                    <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>{" "}
+                    Available
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {nurseList.length > 0 ? (
+                    nurseList.map((staff, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-pink-50 dark:hover:bg-pink-900/20 border-slate-100 dark:border-slate-700 hover:border-pink-200 dark:hover:border-pink-800 group"
+                      >
+                        <div className="relative">
+                          <img
+                            src={
+                              staff.imageUrl ||
+                              `https://ui-avatars.com/api/?name=${staff.name}`
+                            }
+                            className="object-cover w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-800"
+                            alt="Staff"
+                          />
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-pink-500 border-2 border-white rounded-full dark:border-slate-800"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 truncate">
+                            {staff.name}
+                          </p>
+                          <p className="text-xs font-medium text-slate-500">
+                            {staff.ward || "General"}
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                          {timeAgo(staff.lastLoginAt)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
+                      <Activity size={32} className="mb-2 text-slate-300" />
+                      <p>No available nurses.</p>
+                    </div>
+                  )}
+                </div>
+              </WidgetCard>
+
               {/* Nurse Task Checklist */}
               {role === "Nurse" && (
                 <WidgetCard>
@@ -961,119 +1068,16 @@ const DashboardHome = () => {
           </div>
         </div>
 
-        {/* Row 2: Doctors On Call & Nurses On Call */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          {/* ─── Doctors On Call (ALL ROLES) ─── */}
-          <WidgetCard className="h-full">
-            <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
-              <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                <Users size={20} className="text-primary-500" />
-                Doctors On Call
-              </h3>
-              <span className="px-2.5 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-bold flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>{" "}
-                Available
-              </span>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {doctorList.length > 0 ? (
-                doctorList.map((staff, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-primary-50 dark:hover:bg-primary-900/20 border-slate-100 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-800 group"
-                  >
-                    <div className="relative">
-                      <img
-                        src={
-                          staff.imageUrl ||
-                          `https://ui-avatars.com/api/?name=${staff.name}`
-                        }
-                        className="object-cover w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-800"
-                        alt="Staff"
-                      />
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full dark:border-slate-800"></div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 truncate">
-                        {staff.name}
-                      </p>
-                      <p className="text-xs font-medium text-slate-500">
-                        {staff.specialty || "General"}
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                      {timeAgo(staff.lastLoginAt)}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
-                  <Users size={32} className="mb-2 text-slate-300" />
-                  <p>No available doctors.</p>
-                </div>
-              )}
-            </div>
-          </WidgetCard>
 
-          {/* ─── Nurses On Call (ALL ROLES) ─── */}
-          <WidgetCard className="h-full">
-            <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
-              <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
-                <Activity size={20} className="text-pink-500" />
-                Nurses On Call
-              </h3>
-              <span className="px-2.5 py-1 bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 rounded-full text-xs font-bold flex items-center gap-1">
-                <span className="w-2 h-2 bg-pink-500 rounded-full animate-pulse"></span>{" "}
-                Available
-              </span>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {nurseList.length > 0 ? (
-                nurseList.map((staff, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-3 p-3 transition-all border cursor-pointer rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-pink-50 dark:hover:bg-pink-900/20 border-slate-100 dark:border-slate-700 hover:border-pink-200 dark:hover:border-pink-800 group"
-                  >
-                    <div className="relative">
-                      <img
-                        src={
-                          staff.imageUrl ||
-                          `https://ui-avatars.com/api/?name=${staff.name}`
-                        }
-                        className="object-cover w-10 h-10 rounded-full ring-2 ring-white dark:ring-slate-800"
-                        alt="Staff"
-                      />
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-pink-500 border-2 border-white rounded-full dark:border-slate-800"></div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold transition-colors text-slate-900 dark:text-white group-hover:text-pink-600 dark:group-hover:text-pink-400 truncate">
-                        {staff.name}
-                      </p>
-                      <p className="text-xs font-medium text-slate-500">
-                        {staff.ward || "General"}
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                      {timeAgo(staff.lastLoginAt)}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center col-span-2 py-8 text-center border-2 border-dashed text-slate-500 border-slate-200 dark:border-slate-700 rounded-xl">
-                  <Activity size={32} className="mb-2 text-slate-300" />
-                  <p>No available nurses.</p>
-                </div>
-              )}
-            </div>
-          </WidgetCard>
-
-        </div>
 
         {/* Row 3: Calendar & Announcements */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-            {renderCalendar()}
-          </div>
+          {/* Calendar for non-Doctor roles (Doctor/TempAdmin calendar is in the left column) */}
+          {role !== "Doctor" && !isTempAdmin && (
+            <div className="lg:col-span-1">
+              {renderCalendar()}
+            </div>
+          )}
           
           {/* ─── Announcements Management (ADMIN ONLY) ─── */}
           {(role === "Admin" && !isTempAdmin) && (

@@ -130,6 +130,10 @@ router.post("/:id/override", authMiddleware, async (req, res) => {
       return res.status(404).json({ error: "Leave request not found" });
     }
 
+    if (request.requester && request.requester.role === "Nurse") {
+      return res.status(403).json({ error: "Emergency access override cannot be granted to nurses on leave." });
+    }
+
     const expiresAt = new Date(Date.now() + parseFloat(durationHours) * 60 * 60 * 1000);
     const overrideReason = reason || "Emergency access approved by Admin";
 
@@ -227,6 +231,11 @@ router.post("/emergency-request", async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+
+    // Only Doctors can request emergency access; Nurses are not allowed
+    if (user.role === "Nurse") {
+      return res.status(403).json({ error: "Nurses are not allowed to request emergency access during leave." });
     }
 
     // Find active leave request (Approved)
