@@ -166,9 +166,15 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// REGISTER ROUTE (Admin Only)
-router.post("/register", async (req, res) => {
+const authMiddleware = require("../middleware/authMiddleware");
+
+// REGISTER ROUTE (Admin Only - Temp Admins forbidden)
+router.post("/register", authMiddleware, async (req, res) => {
   try {
+    if (req.user.role !== "Admin" || req.user.isTempAdmin) {
+      return res.status(403).json({ message: "Access Denied: Temporary admins cannot add new users." });
+    }
+
     const { name, email, password, role, specialty, ward, imageUrl } = req.body;
 
     const existingUser = await User.findOne({ email });

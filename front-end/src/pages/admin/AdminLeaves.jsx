@@ -3,11 +3,13 @@ import { Calendar, User, ShieldAlert, CheckCircle, XCircle, Key, Clock, AlertTri
 import { useAuth } from "../../contexts/AuthContext";
 
 const AdminLeaves = () => {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [requests, setRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [overrideReason, setOverrideReason] = useState("");
   const [overrideDuration, setOverrideDuration] = useState("2");
+  const [customOverrideVal, setCustomOverrideVal] = useState("1");
+  const [customOverrideUnit, setCustomOverrideUnit] = useState("hours");
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -55,6 +57,12 @@ const AdminLeaves = () => {
     setLoading(true);
     setError(null);
 
+    let finalDurationHours = parseFloat(overrideDuration);
+    if (overrideDuration === "custom") {
+      const val = parseFloat(customOverrideVal) || 0;
+      finalDurationHours = customOverrideUnit === "minutes" ? val / 60 : val;
+    }
+
     try {
       const res = await fetch(`http://localhost:5000/api/leave-requests/${selectedRequest._id}/override`, {
         method: "POST",
@@ -63,7 +71,7 @@ const AdminLeaves = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          durationHours: parseFloat(overrideDuration),
+          durationHours: finalDurationHours,
           reason: overrideReason,
         }),
       });
@@ -182,24 +190,28 @@ const AdminLeaves = () => {
                   </div>
 
                   <p className="text-sm text-slate-600 dark:text-slate-400 italic">
-                    "{req.reason}"
+                    {req.reason}
                   </p>
                 </div>
 
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handleAction(req._id, "approve")}
-                    className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <CheckCircle size={16} /> Approve
-                  </button>
-                  <button
-                    onClick={() => handleAction(req._id, "reject")}
-                    className="flex-1 py-2 px-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <XCircle size={16} /> Reject
-                  </button>
-                </div>
+                {!user?.isTempAdmin ? (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleAction(req._id, "approve")}
+                      className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <CheckCircle size={16} /> Approve
+                    </button>
+                    <button
+                      onClick={() => handleAction(req._id, "reject")}
+                      className="flex-1 py-2 px-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <XCircle size={16} /> Reject
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic">Temp Admins cannot approve or reject leave requests.</p>
+                )}
               </div>
             ))}
           </div>
@@ -238,7 +250,7 @@ const AdminLeaves = () => {
                     {new Date(req.endDate).toLocaleDateString()}
                   </p>
                   <p className="text-xs text-slate-400 dark:text-slate-500">
-                    Reason: "{req.reason}"
+                    Reason: {req.reason}
                   </p>
 
                   {req.emergencyOverride?.isActive ? (
@@ -247,7 +259,7 @@ const AdminLeaves = () => {
                         <Key size={14} /> EMERGENCY OVERRIDE ACTIVE
                       </div>
                       <p>Expires: {new Date(req.emergencyOverride.expiresAt).toLocaleTimeString()}</p>
-                      <p className="italic">"Justification: {req.emergencyOverride.reason}"</p>
+                      <p className="italic">Justification: {req.emergencyOverride.reason}</p>
                     </div>
                   ) : (
                     <>
@@ -260,7 +272,7 @@ const AdminLeaves = () => {
                             <AlertTriangle size={14} className="animate-pulse" /> PENDING EMERGENCY ACCESS REQUEST
                           </div>
                           <p>Requested Duration: {req.emergencyRequest.durationHours} Hours</p>
-                          <p className="italic">"Reason: {req.emergencyRequest.reason}"</p>
+                          <p className="italic">Reason: {req.emergencyRequest.reason}</p>
                         </div>
                       )}
                     </>
@@ -274,7 +286,7 @@ const AdminLeaves = () => {
                   >
                     <XCircle size={16} /> Revoke Override
                   </button>
-                ) : req.requester?.role !== "Nurse" ? (
+                ) : req.requester?.role !== "Nurse" && req.emergencyRequest?.isRequested ? (
                   <button
                     onClick={() => {
                       setSelectedRequest(req);
@@ -321,8 +333,9 @@ const AdminLeaves = () => {
                 <select
                   value={overrideDuration}
                   onChange={(e) => setOverrideDuration(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 cursor-pointer"
                 >
+                  <option value="0.25">15 Minutes</option>
                   <option value="0.5">30 Minutes</option>
                   <option value="1">1 Hour</option>
                   <option value="2">2 Hours</option>
@@ -330,7 +343,31 @@ const AdminLeaves = () => {
                   <option value="8">8 Hours</option>
                   <option value="12">12 Hours</option>
                   <option value="24">24 Hours</option>
+                  <option value="custom">Custom Time...</option>
                 </select>
+
+                {overrideDuration === "custom" && (
+                  <div className="flex gap-2 items-center mt-2">
+                    <input
+                      type="number"
+                      step="any"
+                      min="0.01"
+                      value={customOverrideVal}
+                      onChange={(e) => setCustomOverrideVal(e.target.value)}
+                      placeholder="Enter duration..."
+                      required
+                      className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 text-sm"
+                    />
+                    <select
+                      value={customOverrideUnit}
+                      onChange={(e) => setCustomOverrideUnit(e.target.value)}
+                      className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm cursor-pointer"
+                    >
+                      <option value="minutes">Minutes</option>
+                      <option value="hours">Hours</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
 

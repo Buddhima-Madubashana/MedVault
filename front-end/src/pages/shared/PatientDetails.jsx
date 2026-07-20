@@ -27,6 +27,7 @@ const PatientDetails = () => {
   const navigate = useNavigate();
   const isDoctor = role === "Doctor" || role === "Admin";
   const canEditVitals = role === "Doctor" || role === "Admin" || role === "Nurse";
+  const isDoctorOnLeave = (role === "Doctor" || user?.role === "Doctor" || user?.isTempAdmin) && user?.isOnLeave;
 
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -215,7 +216,11 @@ const PatientDetails = () => {
                 <Activity className="text-red-500" size={20} /> Current Vitals
               </h3>
               {canEditVitals && !editingVitals && (
-                isUserInShift(user) ? (
+                isDoctorOnLeave ? (
+                  <span className="flex items-center gap-1 text-xs text-rose-500 font-semibold" title="Access Blocked: Editing vitals is restricted while on leave date.">
+                    <Lock size={12} /> On Leave Date
+                  </span>
+                ) : isUserInShift(user) ? (
                   <button
                     onClick={() => {
                       setVitalsDraft({
@@ -359,7 +364,11 @@ const PatientDetails = () => {
                   </span>
                 )}
                 {isDoctor && (
-                  isUserInShift(user) ? (
+                  isDoctorOnLeave ? (
+                    <span className="flex items-center gap-1 text-xs text-rose-500 font-semibold" title="Access Blocked: Adding timeline entries is restricted while on leave date.">
+                      <Lock size={12} /> On Leave Date
+                    </span>
+                  ) : isUserInShift(user) ? (
                     <button
                       onClick={() => setShowAddTimeline(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:hover:bg-purple-900/40 rounded-lg transition-colors"

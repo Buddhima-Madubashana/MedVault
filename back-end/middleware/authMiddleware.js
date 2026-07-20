@@ -20,6 +20,13 @@ module.exports = async function (req, res, next) {
       return res.status(401).json({ message: "User not found" });
     }
 
+    // Cleanup expired temp admin permissions
+    if (user.isTempAdmin && user.tempAdminExpiresAt && new Date(user.tempAdminExpiresAt) <= new Date()) {
+      user.isTempAdmin = false;
+      user.tempAdminExpiresAt = null;
+      await user.save();
+    }
+
     // Check Leave Status
     const { checkUserLeaveStatus } = require("../utils/leaveChecker");
     const leaveStatus = await checkUserLeaveStatus(user._id);
@@ -34,6 +41,7 @@ module.exports = async function (req, res, next) {
       });
     }
 
+    user.isOnLeave = !!leaveStatus.onLeave;
     req.user = user;
     next();
   } catch (err) {

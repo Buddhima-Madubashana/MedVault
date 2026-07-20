@@ -29,9 +29,11 @@ const AdminDashboard = () => {
   const { user } = useAuth();
   const isTempAdmin = !!(user?.isTempAdmin && user?.tempAdminExpiresAt && new Date(user.tempAdminExpiresAt) > new Date());
 
-  // Build sidebar: admin items (minus Admin Requests for temp admins) + doctor items if temp admin
+  // Build sidebar: admin items (minus restricted items for temp admins) + doctor items if temp admin
   const filteredAdminItems = adminSidebarItems.filter(item => {
-    if (item.name === "Admin Requests" && isTempAdmin) return false;
+    if (isTempAdmin && (item.name === "Admin Requests" || item.name === "System Settings" || item.name === "User Management")) {
+      return false;
+    }
     return true;
   });
 

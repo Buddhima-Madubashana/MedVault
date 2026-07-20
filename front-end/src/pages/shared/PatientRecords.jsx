@@ -21,6 +21,8 @@ const PatientRecords = () => {
   const [doctors, setDoctors] = useState([]);
   const navigate = useNavigate();
 
+  const isDoctorOnLeave = (role === "Doctor" || user?.role === "Doctor" || user?.isTempAdmin) && user?.isOnLeave;
+
   // --- MODALS STATE ---
   const [isModalOpen, setIsModalOpen] = useState(false); // Add Patient
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Manual Doctor Select
@@ -238,20 +240,20 @@ const PatientRecords = () => {
         </div>
         <button
           onClick={() => {
-            if (isUserInShift(user)) {
+            if (!isDoctorOnLeave && isUserInShift(user)) {
               setIsModalOpen(true);
             }
           }}
-          disabled={!isUserInShift(user)}
+          disabled={isDoctorOnLeave || !isUserInShift(user)}
           className={`flex items-center gap-2 px-5 py-2.5 font-bold text-white transition-all rounded-xl shadow-lg ${
-            isUserInShift(user)
-              ? "bg-primary-600 hover:bg-primary-700 shadow-primary-500/30"
-              : "bg-slate-500/40 text-slate-350 cursor-not-allowed opacity-80"
+            isDoctorOnLeave || !isUserInShift(user)
+              ? "bg-slate-500/40 text-slate-350 cursor-not-allowed opacity-80"
+              : "bg-primary-600 hover:bg-primary-700 shadow-primary-500/30"
           }`}
-          title={isUserInShift(user) ? "" : "Access Blocked: Adding patients is restricted outside active shift hours."}
+          title={isDoctorOnLeave ? "Access Blocked: Adding patients is restricted while on leave date." : isUserInShift(user) ? "" : "Access Blocked: Adding patients is restricted outside active shift hours."}
         >
           <Plus size={18} />{" "}
-          {role === "Nurse" ? "Request Admission" : "Add Patient"} {!isUserInShift(user) && " (Out of Shift)"}
+          {role === "Nurse" ? "Request Admission" : "Add Patient"} {isDoctorOnLeave ? " (On Leave)" : !isUserInShift(user) ? " (Out of Shift)" : ""}
         </button>
       </div>
 
@@ -263,7 +265,14 @@ const PatientRecords = () => {
             className="relative p-6 transition-all bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-soft dark:bg-slate-800/80 rounded-3xl dark:border-slate-700/60 group hover:shadow-glass hover:-translate-y-1"
           >
             <div className="flex justify-end mb-4">
-              {!isUserInShift(user) ? (
+              {isDoctorOnLeave ? (
+                <span 
+                  className="text-slate-300 p-1.5 cursor-not-allowed opacity-60" 
+                  title="Access Blocked: Deleting patients is restricted while on leave date."
+                >
+                  <Trash2 size={18} />
+                </span>
+              ) : !isUserInShift(user) ? (
                 <span 
                   className="text-slate-300 p-1.5 cursor-not-allowed opacity-60" 
                   title="Access Blocked: Deleting/Discharging patients is restricted outside active shift hours."
@@ -646,50 +655,99 @@ const PatientRecords = () => {
       {/* --- MANUAL DELETE DOCTOR SELECTION MODAL --- */}
       <AnimatePresence>
         {isDeleteModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-full max-w-md p-8 bg-white border border-red-200 shadow-2xl rounded-3xl"
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-3xl space-y-6"
             >
-              <h2 className="mb-2 text-xl font-bold text-slate-900">
-                Request Discharge
-              </h2>
-              <p className="mb-6 text-sm text-slate-500">
-                Select a doctor to approve the removal of{" "}
-                <strong>{patientToDelete?.name}</strong>.
-              </p>
-              <div className="space-y-4">
-                <label className="text-sm font-bold text-slate-700">
-                  Approving Doctor
-                </label>
-                <select
-                  className="w-full px-4 py-3 border outline-none rounded-xl border-slate-300 bg-slate-50"
-                  value={deleteDoctorId}
-                  onChange={(e) => setDeleteDoctorId(e.target.value)}
-                >
-                  <option value="">-- Select Doctor --</option>
-                  {doctors.map((doc) => (
-                    <option key={doc._id} value={doc._id}>
-                      Dr. {doc.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={() =>
-                    sendDeleteRequest(patientToDelete, deleteDoctorId)
-                  }
-                  disabled={!deleteDoctorId}
-                  className="w-full py-3 font-bold text-white transition-all bg-red-600 hover:bg-red-700 rounded-xl disabled:opacity-50"
-                >
-                  Send Discharge Request
-                </button>
+              {/* Header */}
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-2xl bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
+                    <AlertCircle size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                      Request Discharge
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Discharge authorization required
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setIsDeleteModalOpen(false)}
-                  className="w-full py-2 text-slate-500 hover:text-slate-700"
+                  className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                 >
-                  Cancel
+                  <X size={20} />
                 </button>
+              </div>
+
+              {/* Patient Card Summary */}
+              {patientToDelete && (
+                <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                  <img
+                    src={patientToDelete.imageUrl || `https://ui-avatars.com/api/?name=${patientToDelete.name}&background=random`}
+                    alt={patientToDelete.name}
+                    className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-700"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                      {patientToDelete.name}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {patientToDelete.ward || "General Ward"} · <span className="text-primary-600 dark:text-primary-400 font-medium">{patientToDelete.disease || "Patient Record"}</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Form Controls */}
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center justify-between">
+                    <span>Approving Doctor <span className="text-rose-500">*</span></span>
+                    <span className="text-xs font-normal text-slate-400">Select physician</span>
+                  </label>
+                  <select
+                    className="w-full px-4 py-3 text-sm font-semibold border outline-none rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500 transition-all cursor-pointer shadow-sm"
+                    value={deleteDoctorId}
+                    onChange={(e) => setDeleteDoctorId(e.target.value)}
+                  >
+                    <option value="" className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                      -- Select Doctor --
+                    </option>
+                    {doctors.map((doc) => (
+                      <option 
+                        key={doc._id} 
+                        value={doc._id}
+                        className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white py-1"
+                      >
+                        Dr. {doc.name} {doc.specialty ? `(${doc.specialty})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-2">
+                  <button
+                    onClick={() =>
+                      sendDeleteRequest(patientToDelete, deleteDoctorId)
+                    }
+                    disabled={!deleteDoctorId}
+                    className="w-full py-3.5 px-4 font-bold text-sm text-white transition-all bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 rounded-xl shadow-lg shadow-rose-500/25 disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    Send Discharge Request
+                  </button>
+                  <button
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="w-full py-2.5 text-sm font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

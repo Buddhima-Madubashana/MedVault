@@ -20,6 +20,13 @@ router.post("/", authMiddleware, async (req, res) => {
     const { adminId, reason, duration } = req.body;
     const admin = await User.findById(adminId);
 
+    // Check if user is on leave
+    const { checkUserLeaveStatus } = require("../utils/leaveChecker");
+    const leaveStatus = await checkUserLeaveStatus(req.user._id);
+    if (leaveStatus.onLeave) {
+      return res.status(403).json({ error: "Admin access cannot be requested while on leave." });
+    }
+
     if (!admin || admin.role !== "Admin") {
       return res.status(400).json({ error: "Invalid admin selected" });
     }
@@ -96,9 +103,10 @@ router.get("/", authMiddleware, async (req, res) => {
 // Approve Request
 router.put("/:id/approve", authMiddleware, async (req, res) => {
   try {
-    // Only the target admin can approve? Or any admin?
-    // User prompt: "Only if the admin reviews and accepts it"
-    // Let's enforce that only the assigned admin can approve.
+    if (req.user.isTempAdmin || req.user.role !== "Admin") {
+      return res.status(403).json({ error: "Access Denied: Temporary admins cannot accept or reject admin access requests." });
+    }
+
     const request = await AdminRequest.findById(req.params.id);
     if (!request) return res.status(404).json({ error: "Request not found" });
 
@@ -150,6 +158,10 @@ router.put("/:id/approve", authMiddleware, async (req, res) => {
 // Reject Request
 router.put("/:id/reject", authMiddleware, async (req, res) => {
   try {
+    if (req.user.isTempAdmin || req.user.role !== "Admin") {
+      return res.status(403).json({ error: "Access Denied: Temporary admins cannot accept or reject admin access requests." });
+    }
+
     const request = await AdminRequest.findById(req.params.id);
     if (!request) return res.status(404).json({ error: "Request not found" });
 

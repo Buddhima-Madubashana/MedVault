@@ -5,12 +5,19 @@ const AdminRequestModal = ({ isOpen, onClose, admins, onSubmit }) => {
   const [adminId, setAdminId] = useState("");
   const [reason, setReason] = useState("");
   const [duration, setDuration] = useState("30"); // Default 30 mins
+  const [customVal, setCustomVal] = useState("30");
+  const [customUnit, setCustomUnit] = useState("minutes");
 
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ adminId, reason, duration: parseInt(duration) });
+    let finalDurationMins = parseInt(duration);
+    if (duration === "custom") {
+      const val = parseFloat(customVal) || 0;
+      finalDurationMins = Math.round(customUnit === "hours" ? val * 60 : val);
+    }
+    onSubmit({ adminId, reason, duration: finalDurationMins });
   };
 
   return (
@@ -69,14 +76,41 @@ const AdminRequestModal = ({ isOpen, onClose, admins, onSubmit }) => {
             <select
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
-              className="w-full p-2.5 border rounded-xl bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition"
+              className="w-full p-2.5 border rounded-xl bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition cursor-pointer"
             >
               <option value="15">15 Minutes</option>
               <option value="30">30 Minutes</option>
               <option value="60">1 Hour</option>
               <option value="120">2 Hours</option>
               <option value="240">4 Hours</option>
+              <option value="480">8 Hours</option>
+              <option value="720">12 Hours</option>
+              <option value="1440">24 Hours</option>
+              <option value="custom">Custom Time...</option>
             </select>
+
+            {duration === "custom" && (
+              <div className="flex gap-2 items-center mt-2">
+                <input
+                  type="number"
+                  step="any"
+                  min="1"
+                  value={customVal}
+                  onChange={(e) => setCustomVal(e.target.value)}
+                  placeholder="Enter duration..."
+                  required
+                  className="flex-1 p-2.5 text-sm border rounded-xl bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <select
+                  value={customUnit}
+                  onChange={(e) => setCustomUnit(e.target.value)}
+                  className="p-2.5 text-sm border rounded-xl bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white cursor-pointer"
+                >
+                  <option value="minutes">Minutes</option>
+                  <option value="hours">Hours</option>
+                </select>
+              </div>
+            )}
           </div>
 
           <button

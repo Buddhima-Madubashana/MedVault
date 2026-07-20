@@ -7,6 +7,7 @@ import {
   Users,
   CheckCircle,
   RefreshCw,
+  ShieldOff,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { AnimatePresence, motion } from "framer-motion";
@@ -14,6 +15,19 @@ import Notification from "../../components/Notification";
 
 const SystemSettings = () => {
   const { user, token } = useAuth();
+
+  if (user?.isTempAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center bg-white/80 backdrop-blur-md dark:bg-slate-900/80 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-soft mt-8">
+        <ShieldOff size={64} className="text-slate-300 dark:text-slate-600 mb-6" />
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Access Denied</h2>
+        <p className="text-slate-500 dark:text-slate-400 max-w-md">
+          As a temporary administrator, you do not have permission to manage system settings.
+        </p>
+      </div>
+    );
+  }
+
   const [policies, setPolicies] = useState({
     minPasswordLength: 8,
     requireSpecialChars: true,

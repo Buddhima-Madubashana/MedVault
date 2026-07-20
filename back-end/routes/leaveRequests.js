@@ -67,11 +67,11 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Approve/Reject Leave Request (Admin Only)
+// Approve/Reject Leave Request (Admin Only - Temp Admins forbidden)
 router.put("/:id/:action", authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== "Admin") {
-      return res.status(403).json({ error: "Access Denied: Admins only" });
+    if (req.user.role !== "Admin" || req.user.isTempAdmin) {
+      return res.status(403).json({ error: "Access Denied: Temporary admins cannot approve or reject leave requests." });
     }
 
     const { id, action } = req.params;

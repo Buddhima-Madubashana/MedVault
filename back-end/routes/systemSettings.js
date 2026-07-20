@@ -22,9 +22,9 @@ router.get("/", async (req, res) => {
 // Update settings (Admin only)
 router.put("/", authMiddleware, async (req, res) => {
   try {
-    // Only Admins can update settings
-    if (req.user.role !== "Admin") {
-      return res.status(403).json({ error: "Forbidden: Admin only." });
+    // Only permanent Admins can update settings
+    if (req.user.role !== "Admin" || req.user.isTempAdmin) {
+      return res.status(403).json({ error: "Access Denied: Temporary admins cannot manage system settings." });
     }
 
     const { actionBy, ...updates } = req.body;
@@ -89,8 +89,8 @@ router.put("/", authMiddleware, async (req, res) => {
 // GET compliance status: how many users still need to reset password
 router.get("/compliance", authMiddleware, async (req, res) => {
   try {
-    if (req.user.role !== "Admin") {
-      return res.status(403).json({ error: "Forbidden: Admin only." });
+    if (req.user.role !== "Admin" || req.user.isTempAdmin) {
+      return res.status(403).json({ error: "Access Denied: Temporary admins cannot manage system settings." });
     }
     const pendingCount = await User.countDocuments({
       mustResetPassword: true,

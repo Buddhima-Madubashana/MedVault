@@ -71,17 +71,31 @@ export const AuthProvider = ({ children }) => {
         fetch(`http://localhost:5000/api/users/${jwtDecode(token).id}`, {
              headers: { Authorization: `Bearer ${token}` }
         })
-        .then(res => res.json())
+        .then(res => {
+           if (res.status === 403 || res.status === 401) {
+             logout();
+             return null;
+           }
+           return res.json();
+        })
         .then(updatedUser => {
            if (updatedUser && updatedUser._id) {
                setUser(updatedUser);
                // Promote role if Temp Admin
-               if (updatedUser.role === "Doctor" && updatedUser.isTempAdmin && updatedUser.tempAdminExpiresAt) {
+               if (updatedUser.isTempAdmin && updatedUser.tempAdminExpiresAt) {
                    const expiry = new Date(updatedUser.tempAdminExpiresAt).getTime();
-                   if (expiry > Date.now()) {
-                       setRole("Admin"); // PROMOTE TO ADMIN
-                       // Update LocalStorage to persist across refreshes
+                   if (expiry <= Date.now()) {
+                       // Temporary admin access expired -> revert & logout
+                       logout();
+                   } else {
+                       if (updatedUser.role === "Doctor") setRole("Admin");
+                       else setRole(updatedUser.role);
                        localStorage.setItem("user", JSON.stringify({...updatedUser, role: "Admin"}));
+                       // Set timer for auto logout when temp admin expires
+                       const tempTimeLeft = Math.min(expiry - Date.now(), 2147483647);
+                       setTimeout(() => {
+                         logout();
+                       }, tempTimeLeft);
                    }
                } else {
                    setRole(updatedUser.role);

@@ -38,7 +38,7 @@ const WidgetCard = ({ children, className = "" }) => (
 );
 
 const DashboardHome = () => {
-  const { user, role, token } = useAuth(); // Need token for requests
+  const { user, role, token, logout } = useAuth(); // Need token & logout
   const navigate = useNavigate();
   const greeting = getGreeting();
 
@@ -271,7 +271,7 @@ const DashboardHome = () => {
       setTimeLeft((prev) => {
         if (prev <= 1000) {
           clearInterval(timer);
-          refreshUser(); // Refresh when time is up
+          logout(); // Revert and auto-logout when time limit expires
           return 0;
         }
         return prev - 1000;
@@ -522,6 +522,14 @@ const DashboardHome = () => {
                ) : requestStatus === "Pending" ? (
                   <button disabled className="px-5 py-2.5 bg-yellow-500/50 text-white rounded-xl font-bold cursor-not-allowed border border-white/10">
                     Request Pending...
+                  </button>
+               ) : (currentUser?.isOnLeave || user?.isOnLeave) ? (
+                  <button 
+                    disabled
+                    className="px-5 py-2.5 bg-slate-500/40 text-slate-300 rounded-xl font-bold cursor-not-allowed border border-white/5 opacity-80 flex items-center gap-2"
+                    title="Access Blocked: Admin access cannot be requested while on leave."
+                  >
+                    <Lock size={18} className="text-slate-400" /> Request Admin Permission (On Leave)
                   </button>
                ) : !isUserInShift(user) ? (
                  <button 

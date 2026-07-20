@@ -36,6 +36,13 @@ router.post("/", authMiddleware, async (req, res) => {
   try {
     const { actionBy, ...patientData } = req.body; // Extract user ID
 
+    // Check if doctor is on leave date
+    const { checkUserLeaveStatus } = require("../utils/leaveChecker");
+    const leaveStatus = await checkUserLeaveStatus(req.user._id);
+    if (leaveStatus.onLeave && (req.user.role === "Doctor" || req.user.isTempAdmin)) {
+      return res.status(403).json({ error: "Patients cannot be added while on leave." });
+    }
+
     // Task 1: Set approvedBy so the PatientDetails page shows the correct doctor name
     const newPatient = new Patient({
       ...patientData,
@@ -70,6 +77,13 @@ router.patch("/:id", authMiddleware, async (req, res) => {
     // Doctors, Admins, and Nurses can update (Nurses can update vitals only)
     if (req.user.role !== "Doctor" && req.user.role !== "Admin" && req.user.role !== "Nurse") {
       return res.status(403).json({ error: "Forbidden: Insufficient permissions." });
+    }
+
+    // Check if doctor is on leave date
+    const { checkUserLeaveStatus } = require("../utils/leaveChecker");
+    const leaveStatus = await checkUserLeaveStatus(req.user._id);
+    if (leaveStatus.onLeave && (req.user.role === "Doctor" || req.user.isTempAdmin)) {
+      return res.status(403).json({ error: "Patients' Vitals and Treatment Timeline cannot be changed while on leave." });
     }
 
     const { medicalHistory, status, newTimelineEntry, vitals } = req.body;
@@ -151,9 +165,19 @@ router.patch("/:id", authMiddleware, async (req, res) => {
 });
 
 // DELETE Patient (Direct)
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const { actionBy } = req.query; // Get User ID from query param
+    const actorId = req.user ? req.user._id : actionBy;
+
+    if (actorId) {
+      const { checkUserLeaveStatus } = require("../utils/leaveChecker");
+      const leaveStatus = await checkUserLeaveStatus(actorId);
+      if (leaveStatus.onLeave && (req.user?.role === "Doctor" || req.user?.isTempAdmin)) {
+        return res.status(403).json({ error: "Patients cannot be deleted while on leave." });
+      }
+    }
+
     const patient = await Patient.findByIdAndDelete(req.params.id);
 
     if (patient && actionBy) {

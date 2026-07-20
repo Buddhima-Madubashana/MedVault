@@ -207,6 +207,8 @@ function Login({ onSwitchToSignup }) {
   const [showEmergencyForm, setShowEmergencyForm] = useState(false);
   const [emergencyReason, setEmergencyReason] = useState("");
   const [emergencyDuration, setEmergencyDuration] = useState("2");
+  const [customDurationVal, setCustomDurationVal] = useState("1");
+  const [customDurationUnit, setCustomDurationUnit] = useState("hours");
   const [emergencySuccess, setEmergencySuccess] = useState("");
 
   const { login, role } = useAuth();
@@ -267,6 +269,12 @@ function Login({ onSwitchToSignup }) {
     setError("");
     setLoading(true);
 
+    let finalDurationHours = parseFloat(emergencyDuration);
+    if (emergencyDuration === "custom") {
+      const val = parseFloat(customDurationVal) || 0;
+      finalDurationHours = customDurationUnit === "minutes" ? val / 60 : val;
+    }
+
     try {
       const res = await fetch("http://localhost:5000/api/leave-requests/emergency-request", {
         method: "POST",
@@ -274,7 +282,7 @@ function Login({ onSwitchToSignup }) {
         body: JSON.stringify({
           email,
           reason: emergencyReason,
-          durationHours: parseFloat(emergencyDuration),
+          durationHours: finalDurationHours,
         }),
       });
 
@@ -368,13 +376,41 @@ function Login({ onSwitchToSignup }) {
               <select
                 value={emergencyDuration}
                 onChange={(e) => setEmergencyDuration(e.target.value)}
-                className="w-full px-4 py-3 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-4 py-3 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 cursor-pointer"
               >
+                <option value="0.25">15 Minutes</option>
+                <option value="0.5">30 Minutes</option>
                 <option value="1">1 Hour</option>
                 <option value="2">2 Hours</option>
                 <option value="4">4 Hours</option>
                 <option value="8">8 Hours</option>
+                <option value="12">12 Hours</option>
+                <option value="24">24 Hours</option>
+                <option value="custom">Custom Time...</option>
               </select>
+
+              {emergencyDuration === "custom" && (
+                <div className="flex gap-2 items-center mt-2">
+                  <input
+                    type="number"
+                    step="any"
+                    min="0.01"
+                    value={customDurationVal}
+                    onChange={(e) => setCustomDurationVal(e.target.value)}
+                    placeholder="Enter duration..."
+                    required
+                    className="flex-1 px-4 py-2.5 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white focus:ring-2 focus:ring-primary-500"
+                  />
+                  <select
+                    value={customDurationUnit}
+                    onChange={(e) => setCustomDurationUnit(e.target.value)}
+                    className="px-3 py-2.5 text-sm bg-white/50 border rounded-xl outline-none border-slate-200 dark:border-slate-700 dark:bg-slate-950/50 dark:text-white cursor-pointer"
+                  >
+                    <option value="minutes">Minutes</option>
+                    <option value="hours">Hours</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

@@ -53,8 +53,10 @@ const NURSE_WARDS = [
 ];
 import Notification from "../../components/Notification";
 import { AnimatePresence } from "framer-motion";
+import { useAuth } from "../../contexts/AuthContext";
 
 const UserManagement = () => {
+  const { user, token } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -64,6 +66,18 @@ const UserManagement = () => {
     ward: "",
     imageUrl: "",
   });
+
+  if (user?.isTempAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center bg-white/80 backdrop-blur-md dark:bg-slate-900/80 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-soft mt-8">
+        <ShieldOff size={64} className="text-slate-300 dark:text-slate-600 mb-6" />
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Access Denied</h2>
+        <p className="text-slate-500 dark:text-slate-400 max-w-md">
+          As a temporary administrator, you do not have permission to register or add new users.
+        </p>
+      </div>
+    );
+  }
 
   const [notification, setNotification] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -103,7 +117,10 @@ const UserManagement = () => {
     try {
       const response = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(formData),
       });
       const data = await response.json();

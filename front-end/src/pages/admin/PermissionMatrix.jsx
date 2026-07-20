@@ -11,17 +11,17 @@ const PermissionMatrix = () => {
 
   const features = [
     { name: "View Dashboard Analytics", permissions: [true, true, true, true] },
-    { name: "View Patient Records", permissions: [false, true, true, true] },
-    { name: "Manage Patients (Add/Edit)", permissions: [false, false, true, true] },
-    { name: "Delete Patient Records", permissions: [false, false, false, false] }, // Hard delete
+    { name: "View Patient Records", permissions: [true, true, true, true] },
+    { name: "Manage Patients (Add/Edit)", permissions: [false, true, true, true] },
+    { name: "Delete Patient Records", permissions: [true, true, true, true] }, // Hard delete
     { name: "Approve Nurse Requests", permissions: [false, true, true, false] },
-    { name: "View Doctors List", permissions: [false, true, true, true] },
-    { name: "View Nurses List", permissions: [false, true, true, true] },
+    { name: "View Doctors List", permissions: [true, true, true, true] },
+    { name: "View Nurses List", permissions: [true, true, true, true] },
     { name: "Manage Users (CRUD)", permissions: [true, false, false, false] },
     { name: "View Audit Logs", permissions: [true, true, false, false] },
     { name: "View All Users List", permissions: [true, true, false, false] },
     { name: "Manage Leave Requests (Staff)", permissions: [true, false, false, false] },
-    { name: "Manage Leave Requests (Doctors)", permissions: [false, true, false, false] },
+    { name: "Manage Leave Requests (Doctors)", permissions: [true, false, false, false] },
     { name: "Grant Temp Admin Access", permissions: [true, false, false, false] },
     { name: "Manage System Settings", permissions: [true, false, false, false] },
     { name: "Manage Announcements", permissions: [true, true, false, false] },

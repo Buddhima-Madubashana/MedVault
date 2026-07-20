@@ -135,26 +135,24 @@ When a Doctor is granted temporary admin access, their account is **promoted to 
 | **Dashboard** | View Dashboard Analytics & Statistics | ✅ |
 | **Patient Data** | View patient records (fully decrypted, unmasked) | ✅ |
 | **Patient Data** | All Doctor clinical permissions (edit history, vitals, timeline, status) | ✅ |
-| **Patient Data** | Add/Delete patients directly | ✅ |
+| **Patient Data** | Manage Patients (Add/Edit) & Delete Patient Records | ✅ |
 | **Approvals** | Review and approve/reject Nurse requests | ✅ |
-| **User Management** | View All Users list | ✅ |
-| **User Management** | Unlock locked accounts | ✅ |
-| **Security** | View Audit Logs | ✅ |
+| **User Management** | View All Users list & Unlock locked accounts | ✅ |
+| **User Management** | Register / Add new users | ❌ (Forbidden) |
+| **Security** | View Audit Logs & Permission Matrix | ✅ |
 | **Announcements** | Create, update, and delete announcements | ✅ |
-| **Staff Directory** | View Nurse list | ✅ |
-| **Staff Directory** | View Doctor list | ✅ |
-| **Leave Management** | Manage Doctor leave requests | ✅ |
-| **Leave Management** | View all leave requests | ✅ |
-| **Admin Requests** | View/manage admin requests directed to them | ❌ (hidden) |
-| **System Settings** | Modify system security policies | ✅ |
-| **Permission Matrix** | View Permission Matrix | ✅ |
+| **Staff Directory** | View Nurse list & Doctor list | ✅ |
+| **Leave Management** | View leave requests | ✅ (Read-only) |
+| **Leave Management** | Approve/reject leave requests from other users | ❌ (Forbidden) |
+| **Admin Requests** | Review/accept temp admin requests from other doctors | ❌ (Forbidden) |
+| **System Settings** | Modify system security policies | ❌ (Forbidden) |
 
 **Temporary Admin Behavior:**
 - The Doctor's `isTempAdmin` flag is set to `true` with a `tempAdminExpiresAt` timestamp.
 - The frontend promotes the Doctor's role to `Admin` in the AuthContext, redirecting them to the Admin dashboard.
 - The sidebar displays both Admin items and Doctor-specific items under a "Doctor Access" divider.
-- The "Admin Requests" sidebar item is **hidden** for Temporary Admins (they cannot review admin permission requests).
-- When the expiration time passes, the temporary privileges are automatically invalid (checked on every authenticated API request).
+- **Strict Restrictions:** Temporary Admins **cannot** approve leave requests, accept temp admin requests, manage system settings, or add new users. Restricted pages (User Management, System Settings, Admin Requests) are hidden from the sidebar and protected server-side with `403 Forbidden`.
+- **Custom Time Limits & Auto-Logout:** Temporary admin access requests support custom duration inputs (Hours or Minutes). When the expiration time limit is reached, the session is **automatically logged out** and the user reverts to default permissions.
 - Admins can manually revoke temporary access at any time via the Admin Requests page.
 
 ---
@@ -195,10 +193,11 @@ Leave management is a security feature that completely blocks system access for 
 3. **Login Blocking:** When a user with an **approved** leave covering today's date attempts to login, the system **blocks authentication** with the message: _"Access Denied: You are currently on leave."_
 4. **API Middleware Blocking:** Even if a token is somehow obtained, the `authMiddleware` checks leave status on every authenticated request and denies access if the user is on leave without an active override.
 5. **Emergency Access Override:** If a staff member on leave needs emergency access:
-   - The user can submit an **Emergency Access Request** from the login page (providing email, reason, and requested duration).
+   - The user can submit an **Emergency Access Request** from the login page, selecting predefined options or entering a **custom time limit** of their choice in Hours or Minutes (along with email and reason).
    - All Admins receive a notification about the emergency request.
-   - An Admin can **grant an emergency override** with a specified duration in hours.
-   - The override has an expiration time; once expired, access is blocked again.
+   - The **"Grant Emergency Access"** button on the Admin Leaves page is **only displayed when a doctor submits an emergency access request**.
+   - An Admin can review the requested custom duration and grant an emergency override with predefined or custom duration in Hours or Minutes.
+   - When the granted time limit expires, the active session is **automatically logged out** and the user reverts to default system permissions (login blocked).
    - Admins can also **revoke** an active emergency override at any time.
 
 **Leave Day Permissions:**
@@ -556,7 +555,7 @@ Administrators can configure the following security parameters via the System Se
 | Method | Endpoint | Description | Access |
 |---|---|---|---|
 | `POST` | `/api/auth/login` | User login | Public |
-| `POST` | `/api/auth/register` | Register new user | Admin |
+| `POST` | `/api/auth/register` | Register new user | Permanent Admin only |
 
 ### Users
 | Method | Endpoint | Description | Access |
@@ -566,52 +565,52 @@ Administrators can configure the following security parameters via the System Se
 | `GET` | `/api/users/nurses` | List all Nurses | Authenticated |
 | `GET` | `/api/users/locked` | List locked accounts | Admin |
 | `GET` | `/api/users/:id` | Get single user | Authenticated |
-| `POST` | `/api/users/:id/unlock` | Unlock account | Admin |
+| `POST` | `/api/users/:id/unlock` | Unlock account | Admin / Temp Admin |
 | `POST` | `/api/users/:id/reset-password` | Reset user password | Authenticated |
-| `PUT` | `/api/users/:id/shift` | Update shift schedule | Admin |
-| `DELETE` | `/api/users/:id` | Delete user | Admin |
+| `PUT` | `/api/users/:id/shift` | Update shift schedule | Permanent Admin |
+| `DELETE` | `/api/users/:id` | Delete user | Permanent Admin |
 
 ### Patients
 | Method | Endpoint | Description | Access |
 |---|---|---|---|
 | `GET` | `/api/patients` | List all patients (masked by role) | Authenticated |
 | `GET` | `/api/patients/:id` | Get single patient (masked by role) | Authenticated |
-| `POST` | `/api/patients` | Add patient directly | Doctor/Admin |
-| `PATCH` | `/api/patients/:id` | Update patient record | Doctor/Nurse/Admin |
-| `DELETE` | `/api/patients/:id` | Delete patient | Doctor/Admin |
+| `POST` | `/api/patients` | Add patient directly | Doctor/Temp Admin/Admin |
+| `PATCH` | `/api/patients/:id` | Update patient record | Doctor/Nurse/Temp Admin/Admin |
+| `DELETE` | `/api/patients/:id` | Delete patient | Doctor/Temp Admin/Admin |
 
 ### Patient Requests
 | Method | Endpoint | Description | Access |
 |---|---|---|---|
 | `POST` | `/api/patient-requests` | Submit admission/discharge request | Nurse |
-| `GET` | `/api/patient-requests` | List pending requests | Doctor/Nurse |
-| `POST` | `/api/patient-requests/:id/approve` | Approve request | Doctor |
-| `DELETE` | `/api/patient-requests/:id` | Reject request | Doctor |
+| `GET` | `/api/patient-requests` | List pending requests | Doctor/Nurse/Temp Admin |
+| `POST` | `/api/patient-requests/:id/approve` | Approve request | Doctor/Temp Admin |
+| `DELETE` | `/api/patient-requests/:id` | Reject request | Doctor/Temp Admin |
 
 ### Admin Requests (Temporary Admin)
 | Method | Endpoint | Description | Access |
 |---|---|---|---|
 | `POST` | `/api/admin-requests` | Request temp admin access | Doctor |
-| `GET` | `/api/admin-requests` | List requests | Admin/Doctor |
-| `PUT` | `/api/admin-requests/:id/approve` | Approve request | Target Admin |
-| `PUT` | `/api/admin-requests/:id/reject` | Reject request | Target Admin |
-| `PUT` | `/api/admin-requests/:id/revoke` | Revoke permission | Any Admin |
+| `GET` | `/api/admin-requests` | List requests | Permanent Admin / Doctor |
+| `PUT` | `/api/admin-requests/:id/approve` | Approve request | Target Permanent Admin |
+| `PUT` | `/api/admin-requests/:id/reject` | Reject request | Target Permanent Admin |
+| `PUT` | `/api/admin-requests/:id/revoke` | Revoke permission | Permanent Admin |
 
 ### Leave Requests
 | Method | Endpoint | Description | Access |
 |---|---|---|---|
 | `POST` | `/api/leave-requests` | Apply for leave | Doctor/Nurse |
 | `GET` | `/api/leave-requests` | List leave requests | Admin (all) / Staff (own) |
-| `PUT` | `/api/leave-requests/:id/:action` | Approve/reject leave | Admin |
-| `POST` | `/api/leave-requests/:id/override` | Grant emergency override | Admin |
-| `POST` | `/api/leave-requests/:id/revoke-override` | Revoke override | Admin |
+| `PUT` | `/api/leave-requests/:id/:action` | Approve/reject leave | Permanent Admin only |
+| `POST` | `/api/leave-requests/:id/override` | Grant emergency override | Permanent Admin only |
+| `POST` | `/api/leave-requests/:id/revoke-override` | Revoke override | Permanent Admin only |
 | `POST` | `/api/leave-requests/emergency-request` | Request emergency access | Public (from login) |
 
 ### Tasks
 | Method | Endpoint | Description | Access |
 |---|---|---|---|
-| `POST` | `/api/tasks` | Assign task to Nurse | Doctor |
-| `GET` | `/api/tasks` | List tasks | Doctor/Nurse/Admin |
+| `POST` | `/api/tasks` | Assign task to Nurse | Doctor/Temp Admin |
+| `GET` | `/api/tasks` | List tasks | Doctor/Nurse/Admin/Temp Admin |
 | `PUT` | `/api/tasks/:id/complete` | Mark task complete | Nurse |
 
 ### Announcements
@@ -627,8 +626,8 @@ Administrators can configure the following security parameters via the System Se
 | Method | Endpoint | Description | Access |
 |---|---|---|---|
 | `GET` | `/api/settings` | Get current settings | Public |
-| `PUT` | `/api/settings` | Update settings | Admin |
-| `GET` | `/api/settings/compliance` | Get password compliance status | Admin |
+| `PUT` | `/api/settings` | Update settings | Permanent Admin only |
+| `GET` | `/api/settings/compliance` | Get password compliance status | Permanent Admin only |
 
 ### Audit Logs
 | Method | Endpoint | Description | Access |

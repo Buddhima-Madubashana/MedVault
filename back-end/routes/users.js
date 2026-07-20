@@ -98,7 +98,11 @@ router.get("/:id", async (req, res) => {
    try {
      const user = await User.findById(req.params.id).select("-password");
      if (!user) return res.status(404).json({ message: "User not found" });
-     res.json(user);
+     const { checkUserLeaveStatus } = require("../utils/leaveChecker");
+     const leaveStatus = await checkUserLeaveStatus(user._id);
+     const userObj = user.toObject();
+     userObj.isOnLeave = !!leaveStatus.onLeave;
+     res.json(userObj);
    } catch (err) {
      res.status(500).json({ error: err.message });
    }
