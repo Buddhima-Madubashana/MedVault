@@ -111,15 +111,15 @@ router.patch("/:id", authMiddleware, async (req, res) => {
     if (vitals) {
       const changes = [];
       if (vitals.heartRate && vitals.heartRate !== patient.vitals.heartRate) {
-        changes.push(`Heart Rate: ${patient.vitals.heartRate} → ${vitals.heartRate}`);
+        changes.push(`Heart Rate: ${patient.vitals.heartRate ?? 0} → ${vitals.heartRate}`);
         patient.vitals.heartRate = vitals.heartRate;
       }
       if (vitals.bloodPressure && vitals.bloodPressure !== patient.vitals.bloodPressure) {
-        changes.push(`BP: ${patient.vitals.bloodPressure} → ${vitals.bloodPressure}`);
+        changes.push(`BP: ${patient.vitals.bloodPressure ?? 0} → ${vitals.bloodPressure}`);
         patient.vitals.bloodPressure = vitals.bloodPressure;
       }
       if (vitals.temperature && vitals.temperature !== patient.vitals.temperature) {
-        changes.push(`Temp: ${patient.vitals.temperature} → ${vitals.temperature}`);
+        changes.push(`Temp: ${patient.vitals.temperature ?? 0} → ${vitals.temperature}`);
         patient.vitals.temperature = vitals.temperature;
       }
       if (changes.length > 0) {

@@ -135,7 +135,11 @@ const AllUsers = () => {
         endpoint = `http://localhost:5000/api/users/${id}?actionBy=${user._id}`;
       }
 
-      const res = await fetch(endpoint, { method: "DELETE" });
+      const options = {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      };
+      const res = await fetch(endpoint, options);
 
       if (res.ok) {
         setNotification({

@@ -332,8 +332,7 @@ const PatientDetails = () => {
                 </div>
               ) : (
                 <div className="text-sm leading-relaxed text-slate-500 dark:text-slate-400 italic">
-                  Patient admitted with symptoms of {patient.disease}. Initial assessment shows stable vitals.
-                  Requires monitoring and standard treatment protocol.
+                  Patient admitted with symptoms of {patient.disease}. Requires monitoring and standard treatment protocol.
                 </div>
               )}
               {/* Always show admission metadata */}
@@ -439,13 +438,7 @@ const PatientDetails = () => {
               </div>
 
               {/* Dynamic entries from DB */}
-              {timeline.length === 0 && (
-                <div className="relative">
-                  <span className="absolute -left-[31px] top-1 w-4 h-4 bg-blue-400 rounded-full border-2 border-white dark:border-slate-800" />
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">Initial Checkup Completed</p>
-                  <p className="text-xs text-slate-500">Soon after admission</p>
-                </div>
-              )}
+
 
               <AnimatePresence>
                 {[...timeline].reverse().map((entry, idx) => (

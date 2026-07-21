@@ -52,10 +52,11 @@ router.get("/", authMiddleware, async (req, res) => {
   try {
     let requests;
     if (req.user.role === "Admin") {
-      requests = await LeaveRequest.find()
+      const allRequests = await LeaveRequest.find()
         .populate("requester", "name email role specialty ward")
         .populate("approvedBy", "name")
         .sort({ createdAt: -1 });
+      requests = allRequests.filter((r) => r.requester != null);
     } else {
       requests = await LeaveRequest.find({ requester: req.user._id })
         .populate("approvedBy", "name")

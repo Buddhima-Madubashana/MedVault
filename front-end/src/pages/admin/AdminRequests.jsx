@@ -109,7 +109,7 @@ const AdminRequests = () => {
                     {req.requester?.name || "Unknown User"}
                   </h3>
                   <p className="text-sm font-medium text-primary-600 dark:text-primary-400 mb-2">
-                    {req.requester?.ward || "Unknown Ward"} • {req.requester?.specialty || "General"}
+                    {req.requester?.ward || "Ward"} • {req.requester?.specialty || "General"}
                   </p>
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60 mt-3 max-w-xl">
                     <p className="text-sm text-slate-700 dark:text-slate-300">

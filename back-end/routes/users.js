@@ -102,6 +102,9 @@ router.get("/:id", async (req, res) => {
      const leaveStatus = await checkUserLeaveStatus(user._id);
      const userObj = user.toObject();
      userObj.isOnLeave = !!leaveStatus.onLeave;
+     if (leaveStatus.overrideActive && leaveStatus.leaveRequest?.emergencyOverride?.expiresAt) {
+       userObj.overrideExpiresAt = leaveStatus.leaveRequest.emergencyOverride.expiresAt;
+     }
      res.json(userObj);
    } catch (err) {
      res.status(500).json({ error: err.message });
@@ -184,6 +187,14 @@ router.delete("/:id", async (req, res) => {
     }
 
     await User.findByIdAndDelete(req.params.id);
+
+    // Delete associated leave requests
+    await LeaveRequest.deleteMany({
+      $or: [
+        { requester: req.params.id },
+        { approvedBy: req.params.id }
+      ]
+    });
 
     // LOG ACTION
     if (actionBy) {

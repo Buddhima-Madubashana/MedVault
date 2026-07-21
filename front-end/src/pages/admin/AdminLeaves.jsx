@@ -271,7 +271,7 @@ const AdminLeaves = () => {
                           <div className="flex items-center gap-1.5 font-bold">
                             <AlertTriangle size={14} className="animate-pulse" /> PENDING EMERGENCY ACCESS REQUEST
                           </div>
-                          <p>Requested Duration: {req.emergencyRequest.durationHours} Hours</p>
+                          <p>Requested Duration: {req.emergencyRequest.durationHours < 1 ? `${Math.round(req.emergencyRequest.durationHours * 60)} minutes` : `${req.emergencyRequest.durationHours} Hours`}</p>
                           <p className="italic">Reason: {req.emergencyRequest.reason}</p>
                         </div>
                       )}
