@@ -196,9 +196,16 @@ const AllUsers = () => {
     } else if (activeTab === "Patients") {
       columns = [
         { header: "Name", key: "name" },
-        { header: "DOB", key: "dob" },
-        { header: "Blood Type", key: "bloodType" },
-        { header: "Condition", key: "condition" },
+        { header: "Age", key: "age" },
+        { header: "Ward", key: "ward" },
+        { header: "Condition", key: "disease" },
+        { header: "Phone", key: "phone" },
+        { header: "Email", key: "email" },
+        { header: "Address", key: "address" },
+        { header: "Guardian", key: "guardianName" },
+        { header: "Heart Rate", key: "vitals.heartRate" },
+        { header: "Blood Pressure", key: "vitals.bloodPressure" },
+        { header: "Temperature", key: "vitals.temperature" },
       ];
     }
     

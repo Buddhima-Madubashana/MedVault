@@ -128,7 +128,7 @@ const LockedAccounts = () => {
                   Account Blocked
                 </div>
                 <p className="mt-1 text-xs text-slate-500">
-                  Reason: {user.failedLoginAttempts > 0 ? `${user.failedLoginAttempts} Failed Login Attempts` : "User is currently on leave"}
+                  Reason: {user.failedLoginAttempts} Failed Login Attempts
                 </p>
               </div>
 

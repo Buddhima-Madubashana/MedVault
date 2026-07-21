@@ -42,10 +42,6 @@ router.post("/login", async (req, res) => {
     // Check Leave Status
     const leaveStatus = await checkUserLeaveStatus(user._id);
     if (leaveStatus.onLeave && !leaveStatus.overrideActive) {
-      if (!user.isLocked) {
-        user.isLocked = true;
-        await user.save();
-      }
       await logAction(
         user,
         "LOGIN_BLOCKED",

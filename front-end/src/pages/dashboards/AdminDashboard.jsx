@@ -31,7 +31,13 @@ const AdminDashboard = () => {
 
   // Build sidebar: admin items (minus restricted items for temp admins) + doctor items if temp admin
   const filteredAdminItems = adminSidebarItems.filter(item => {
-    if (isTempAdmin && (item.name === "Admin Requests" || item.name === "System Settings" || item.name === "User Management")) {
+    if (isTempAdmin && (
+      item.name === "User Management" ||
+      item.name === "Leave Requests" ||
+      item.name === "Admin Requests" ||
+      item.name === "System Settings" ||
+      item.name === "Locked Accounts"
+    )) {
       return false;
     }
     return true;

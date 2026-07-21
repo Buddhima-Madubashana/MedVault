@@ -86,7 +86,7 @@ router.get("/nurses/available", async (req, res) => {
 // --- NEW: Get Locked Accounts ---
 router.get("/locked", async (req, res) => {
   try {
-    const lockedUsers = await User.find({ isLocked: true }).select("-password");
+    const lockedUsers = await User.find({ isLocked: true, failedLoginAttempts: { $gt: 0 } }).select("-password");
     res.json(lockedUsers);
   } catch (err) {
     res.status(500).json({ error: err.message });

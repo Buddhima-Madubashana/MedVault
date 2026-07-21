@@ -253,7 +253,7 @@ const AdminLeaves = () => {
                     Reason: {req.reason}
                   </p>
 
-                  {req.emergencyOverride?.isActive ? (
+                  {req.emergencyOverride?.isActive && new Date(req.emergencyOverride.expiresAt) > new Date() ? (
                     <div className="mt-2 p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs border border-emerald-500/20 space-y-1">
                       <div className="flex items-center gap-1.5 font-bold">
                         <Key size={14} /> EMERGENCY OVERRIDE ACTIVE
@@ -279,7 +279,7 @@ const AdminLeaves = () => {
                   )}
                 </div>
 
-                {req.emergencyOverride?.isActive ? (
+                {req.emergencyOverride?.isActive && new Date(req.emergencyOverride.expiresAt) > new Date() ? (
                   <button
                     onClick={() => handleRevokeOverride(req._id)}
                     className="py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0 self-start md:self-center cursor-pointer"

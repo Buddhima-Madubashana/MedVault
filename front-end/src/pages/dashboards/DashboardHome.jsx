@@ -365,10 +365,10 @@ const DashboardHome = () => {
     return Object.entries(stats).map(([name, count]) => ({ name, count }));
   };
 
-  // 2. Fetch Live Activity (Only for Admin and Temp Admin, Limit 4)
+  // 2. Fetch Live Activity (Only for Admin and Temp Admin, Limit 5)
   useEffect(() => {
     if (role === "Admin" || isTempAdmin) {
-      fetch("http://localhost:5000/api/audit-logs?limit=4", {
+      fetch("http://localhost:5000/api/audit-logs?limit=5", {
          headers: { Authorization: `Bearer ${token}` }, // Add auth for logs
       })
         .then((res) => res.json())
@@ -1094,13 +1094,11 @@ const DashboardHome = () => {
 
 
 
-        {/* Row 3: Calendar & Announcements */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* Removed calendar from here as it is now in the left column for all roles */}
-          
+        {/* Row 3: Announcements */}
+        <div className="flex justify-center w-full">
           {/* ─── Announcements Management (ADMIN ONLY) ─── */}
           {(role === "Admin" && !isTempAdmin) && (
-            <div className="lg:col-span-2">
+            <div className="w-full max-w-5xl lg:w-2/3">
               <WidgetCard className="h-full">
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100 dark:border-slate-700">
                 <h3 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
