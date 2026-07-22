@@ -163,11 +163,22 @@ const PatientRecords = () => {
           // <--- UPDATED URL below
           fetch(
             `http://localhost:5000/api/patients/${patient._id}?actionBy=${user._id}`,
-            { method: "DELETE" },
-          ).then(() => {
-            showNotification("success", "Deleted", "Record removed.");
-            fetchData();
-          });
+            { 
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${token}` }
+            },
+          )
+            .then(async (res) => {
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || "Failed to delete patient");
+              }
+              showNotification("success", "Deleted", "Record removed.");
+              fetchData();
+            })
+            .catch((err) => {
+              showNotification("error", "Error", err.message);
+            });
         },
       });
     } else {

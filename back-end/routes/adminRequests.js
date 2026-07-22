@@ -165,7 +165,7 @@ router.put("/:id/reject", authMiddleware, async (req, res) => {
     const request = await AdminRequest.findById(req.params.id);
     if (!request) return res.status(404).json({ error: "Request not found" });
 
-    if (request.admin.toString() !== req.user._id) {
+    if (request.admin.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: "Not authorized to reject this request" });
     }
 
